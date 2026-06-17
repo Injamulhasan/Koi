@@ -337,6 +337,14 @@ export async function customFetch<T = unknown>(
 
   const headers = mergeHeaders(isRequest(input) ? input.headers : undefined, headersInit);
 
+  // Attach mock user ID if Clerk is not enabled and we have a mock user in localStorage
+  if (typeof window !== "undefined" && window.localStorage) {
+    const mockId = window.localStorage.getItem("mock_clerk_id");
+    if (mockId && !headers.has("x-mock-user-id")) {
+      headers.set("x-mock-user-id", mockId);
+    }
+  }
+
   if (
     typeof init.body === "string" &&
     !headers.has("content-type") &&

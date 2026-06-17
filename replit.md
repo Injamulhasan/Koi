@@ -1,11 +1,11 @@
-# Podcast — Friends Hangout Management Platform
+# KOI — Friends Hangout Management Platform
 
 A private social platform for a close group of friends to organize hangouts, vote on locations, chat, track expenses, and manage lending.
 
 ## Run & Operate
 
 - `pnpm --filter @workspace/api-server run dev` — run the API server (port 8080)
-- `pnpm --filter @workspace/podcast run dev` — run the frontend (port 22585)
+- `pnpm --filter @workspace/koi run dev` — run the frontend (port 22585)
 - `pnpm run typecheck` — full typecheck across all packages
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
@@ -30,7 +30,7 @@ A private social platform for a close group of friends to organize hangouts, vot
 - API contract: `lib/api-spec/openapi.yaml`
 - Generated hooks: `lib/api-client-react/src/generated/`
 - Generated Zod schemas: `lib/api-zod/src/generated/`
-- Frontend pages: `artifacts/podcast/src/pages/`
+- Frontend pages: `artifacts/koi/src/pages/`
 - API routes: `artifacts/api-server/src/routes/`
 - Clerk proxy middleware: `artifacts/api-server/src/middlewares/clerkProxyMiddleware.ts`
 - Auth middleware: `artifacts/api-server/src/middlewares/requireAuth.ts`
