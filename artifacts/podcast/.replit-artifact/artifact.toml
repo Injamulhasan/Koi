@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Podcast"
+version = "1.0.0"
+id = "artifacts/podcast"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 22585
+
+[services.development]
+run = "pnpm --filter @workspace/podcast run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/podcast", "run", "build" ]
+publicDir = "artifacts/podcast/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "22585"
+BASE_PATH = "/"

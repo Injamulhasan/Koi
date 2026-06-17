@@ -1,22 +1,41 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Podcast - Friends Hangout Management Platform API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: users
+    description: User profile operations
+  - name: locations
+    description: Hangout locations
+  - name: votes
+    description: Voting system
+  - name: schedule
+    description: Hangout schedule
+  - name: messages
+    description: Group chat messages
+  - name: reactions
+    description: Message reactions
+  - name: contributions
+    description: Expense contributions
+  - name: lending
+    description: Friend-to-friend lending
+  - name: notifications
+    description: User notifications
+  - name: dashboard
+    description: Dashboard summary
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +43,420 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # Users
+  /users/me:
+    get:
+      operationId: getCurrentUser
+      tags: [users]
+      summary: Get current user profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+        "401":
+          description: Unauthorized
+    put:
+      operationId: updateCurrentUser
+      tags: [users]
+      summary: Update current user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UserProfileInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
+  /users:
+    get:
+      operationId: listUsers
+      tags: [users]
+      summary: List all platform users
+      responses:
+        "200":
+          description: List of users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserProfile"
+
+  # Locations
+  /locations:
+    get:
+      operationId: listLocations
+      tags: [locations]
+      summary: List all hangout locations with vote counts
+      responses:
+        "200":
+          description: Locations with vote counts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LocationWithVotes"
+
+  # Votes
+  /votes:
+    get:
+      operationId: listVotes
+      tags: [votes]
+      summary: List all votes with voter info
+      responses:
+        "200":
+          description: All votes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Vote"
+    post:
+      operationId: castVote
+      tags: [votes]
+      summary: Cast or change vote for a location
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoteInput"
+      responses:
+        "200":
+          description: Vote cast
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vote"
+
+  /votes/my:
+    get:
+      operationId: getMyVote
+      tags: [votes]
+      summary: Get current user's vote
+      responses:
+        "200":
+          description: Current user vote (null if no vote)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Vote"
+    delete:
+      operationId: removeMyVote
+      tags: [votes]
+      summary: Remove current user's vote
+      responses:
+        "204":
+          description: Vote removed
+
+  # Schedule
+  /schedule:
+    get:
+      operationId: getSchedule
+      tags: [schedule]
+      summary: Get the upcoming hangout schedule
+      responses:
+        "200":
+          description: Schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Schedule"
+    put:
+      operationId: updateSchedule
+      tags: [schedule]
+      summary: Update the hangout schedule
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleInput"
+      responses:
+        "200":
+          description: Updated schedule
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Schedule"
+
+  # Messages
+  /messages:
+    get:
+      operationId: listMessages
+      tags: [messages]
+      summary: List chat messages
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+        - name: before
+          in: query
+          schema:
+            type: ["integer", "null"]
+      responses:
+        "200":
+          description: Messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Message"
+    post:
+      operationId: sendMessage
+      tags: [messages]
+      summary: Send a chat message
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MessageInput"
+      responses:
+        "201":
+          description: Message sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Message"
+
+  /messages/{id}:
+    delete:
+      operationId: deleteMessage
+      tags: [messages]
+      summary: Delete a message (author only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # Reactions
+  /messages/{id}/reactions:
+    post:
+      operationId: addReaction
+      tags: [reactions]
+      summary: Add or toggle reaction to a message
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReactionInput"
+      responses:
+        "200":
+          description: Reactions updated
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ReactionSummary"
+
+  # Contributions
+  /contributions:
+    get:
+      operationId: listContributions
+      tags: [contributions]
+      summary: List all member contributions
+      responses:
+        "200":
+          description: Contributions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Contribution"
+
+  /contributions/me:
+    put:
+      operationId: upsertMyContribution
+      tags: [contributions]
+      summary: Set or update current user's contribution amount
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContributionInput"
+      responses:
+        "200":
+          description: Updated contribution
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Contribution"
+
+  # Lending
+  /lending:
+    get:
+      operationId: listLendingRecords
+      tags: [lending]
+      summary: List all lending records visible to group
+      responses:
+        "200":
+          description: Lending records
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LendingRecord"
+    post:
+      operationId: createLendingRecord
+      tags: [lending]
+      summary: Create a new lending record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LendingRecordInput"
+      responses:
+        "201":
+          description: Record created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LendingRecord"
+
+  /lending/{id}:
+    patch:
+      operationId: updateLendingRecord
+      tags: [lending]
+      summary: Update lending record (lender only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LendingRecordUpdate"
+      responses:
+        "200":
+          description: Updated record
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LendingRecord"
+    delete:
+      operationId: deleteLendingRecord
+      tags: [lending]
+      summary: Delete lending record (lender only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /lending/{id}/repaid:
+    post:
+      operationId: markLoanRepaid
+      tags: [lending]
+      summary: Mark a loan as repaid (lender only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Marked repaid
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LendingRecord"
+
+  # Notifications
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      summary: List notifications for current user
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      summary: Mark all notifications as read
+      responses:
+        "204":
+          description: Marked read
+
+  /notifications/{id}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [notifications]
+      summary: Mark a single notification as read
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Marked read
+
+  # Dashboard
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Get aggregated dashboard data
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +467,261 @@ components:
       required:
         - status
 
+    UserProfile:
+      type: object
+      required: [id, clerkId, name, email, createdAt]
+      properties:
+        id:
+          type: integer
+        clerkId:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    UserProfileInput:
+      type: object
+      properties:
+        name:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+
+    LocationWithVotes:
+      type: object
+      required: [id, name, voteCount]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        voteCount:
+          type: integer
+
+    Vote:
+      type: object
+      required: [id, userId, locationId, locationName, userName, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        locationId:
+          type: integer
+        locationName:
+          type: string
+        userName:
+          type: string
+        userAvatarUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+
+    VoteInput:
+      type: object
+      required: [locationId]
+      properties:
+        locationId:
+          type: integer
+
+    Schedule:
+      type: object
+      required: [id, date, time, updatedAt]
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+        time:
+          type: string
+        updatedBy:
+          type: ["integer", "null"]
+        updatedByName:
+          type: ["string", "null"]
+        updatedAt:
+          type: string
+
+    ScheduleInput:
+      type: object
+      required: [date, time]
+      properties:
+        date:
+          type: string
+        time:
+          type: string
+
+    Message:
+      type: object
+      required: [id, userId, userName, messageText, createdAt, reactions]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: string
+        userAvatarUrl:
+          type: ["string", "null"]
+        messageText:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+        reactions:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReactionSummary"
+
+    MessageInput:
+      type: object
+      required: [messageText]
+      properties:
+        messageText:
+          type: string
+        imageUrl:
+          type: ["string", "null"]
+
+    ReactionSummary:
+      type: object
+      required: [emoji, count, userIds]
+      properties:
+        emoji:
+          type: string
+        count:
+          type: integer
+        userIds:
+          type: array
+          items:
+            type: integer
+
+    ReactionInput:
+      type: object
+      required: [emoji]
+      properties:
+        emoji:
+          type: string
+
+    Contribution:
+      type: object
+      required: [id, userId, userName, amount, updatedAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        userName:
+          type: string
+        userAvatarUrl:
+          type: ["string", "null"]
+        amount:
+          type: number
+        updatedAt:
+          type: string
+
+    ContributionInput:
+      type: object
+      required: [amount]
+      properties:
+        amount:
+          type: number
+
+    LendingRecord:
+      type: object
+      required: [id, lenderId, lenderName, borrowerId, borrowerName, amount, status, createdAt]
+      properties:
+        id:
+          type: integer
+        lenderId:
+          type: integer
+        lenderName:
+          type: string
+        lenderAvatarUrl:
+          type: ["string", "null"]
+        borrowerId:
+          type: integer
+        borrowerName:
+          type: string
+        borrowerAvatarUrl:
+          type: ["string", "null"]
+        amount:
+          type: number
+        note:
+          type: ["string", "null"]
+        status:
+          type: string
+          enum: [active, repaid]
+        createdAt:
+          type: string
+        repaidAt:
+          type: ["string", "null"]
+
+    LendingRecordInput:
+      type: object
+      required: [borrowerId, amount]
+      properties:
+        borrowerId:
+          type: integer
+        amount:
+          type: number
+        note:
+          type: ["string", "null"]
+
+    LendingRecordUpdate:
+      type: object
+      properties:
+        borrowerId:
+          type: integer
+        amount:
+          type: number
+        note:
+          type: ["string", "null"]
+
+    Notification:
+      type: object
+      required: [id, userId, type, message, read, createdAt]
+      properties:
+        id:
+          type: integer
+        userId:
+          type: integer
+        type:
+          type: string
+        message:
+          type: string
+        read:
+          type: boolean
+        createdAt:
+          type: string
+
+    DashboardSummary:
+      type: object
+      required: [leadingLocation, totalVotes, schedule, recentMessages, totalContributions, activeLoans, unreadNotifications]
+      properties:
+        leadingLocation:
+          type: ["string", "null"]
+        leadingLocationId:
+          type: ["integer", "null"]
+        leadingLocationVotes:
+          type: integer
+        totalVotes:
+          type: integer
+        schedule:
+          $ref: "#/components/schemas/Schedule"
+        recentMessages:
+          type: array
+          items:
+            $ref: "#/components/schemas/Message"
+        totalContributions:
+          type: number
+          description: Sum of all contribution amounts
+        activeLoans:
+          type: integer
+          description: Count of active loans
+        unreadNotifications:
+          type: integer

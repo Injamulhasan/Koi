@@ -1,0 +1,281 @@
+Build "Podcast" – Friends Hangout Management Platform
+
+Create a modern full-stack web application called "Podcast".
+
+Project Overview
+
+Podcast is a private social platform designed for a close group of friends to organize and manage their regular hangouts.
+
+The goal is to make planning hangouts fun, transparent, and collaborative by combining voting, group communication, expense tracking, and lending records into one dashboard.
+
+The application should support real-time updates so that all members always see the latest information.
+
+Core Features
+1. Authentication System
+Friends must create an account before accessing the application.
+Authentication should include:
+Sign Up
+Log In
+Log Out
+Only authenticated users can access the platform.
+User profile should contain:
+Name
+Email
+Profile picture (optional)
+2. Dashboard
+
+After logging in, users should land on a dashboard displaying:
+
+Dashboard Widgets
+Current leading hangout location.
+Total votes for each location.
+Upcoming hangout date and time.
+Recent chat activity.
+Expense contribution summary.
+Outstanding lending records.
+
+The dashboard should update dynamically whenever changes occur.
+
+3. Hangout Voting System
+
+Friends can vote for where the next hangout will take place.
+
+Available Hangout Locations
+
+For the MVP, the only available locations are:
+
+Rafir Chaad
+Ratul er Basha
+Saif er Chaad
+Mushfiq er Chaad
+Rejar Chaad
+300 Feet
+Voting Rules
+Each friend can cast only one active vote.
+Friends can change their vote at any time.
+Vote counts update instantly.
+The location with the highest number of votes should be highlighted as:
+
+"Current Winning Hangout Spot"
+
+Everyone should be able to see:
+
+Total votes.
+Who voted for which location.
+4. Hangout Schedule
+
+The application should allow users to manage hangout timing.
+
+Features:
+
+Select hangout date.
+Select hangout time.
+Display countdown until the next hangout.
+Show the scheduled hangout details prominently on the dashboard.
+
+Any schedule updates should immediately appear for all users.
+
+5. Group Chat System
+
+Create a real-time group chat feature.
+
+Chat Features
+
+Users should be able to:
+
+Send text messages.
+Upload photos/snaps.
+View all shared messages.
+See who sent each message.
+See timestamps.
+Reactions
+
+Friends should be able to react to messages and snaps using emojis such as:
+
+❤️
+😂
+👍
+🔥
+😮
+
+Reaction counts should update in real time.
+
+6. Hangout Contribution Tracker
+
+Every hangout costs money, so users should be able to declare how much they plan to contribute.
+
+Each member can:
+
+Enter their intended contribution amount.
+Update their contribution amount.
+View everyone else's contribution plans.
+
+Display:
+
+Friend's name.
+Planned contribution amount.
+Total expected budget collected from all friends.
+
+The contribution list should be visible to all members.
+
+7. Friend-to-Friend Lending System
+
+The platform should track money borrowed between friends.
+
+Lending Workflow
+
+When a friend lends money:
+
+The lender should create a lending record containing:
+
+Borrower's name.
+Amount lent.
+Optional note/reason.
+Date of lending.
+
+All group members should be able to see these records.
+
+Display status such as:
+
+Active Loan
+Repaid
+Permissions
+
+Only the lender should be able to:
+
+Mark the loan as repaid.
+Edit the lending details.
+Delete the lending record.
+8. Notifications
+
+Users should receive notifications when:
+
+A new vote is submitted.
+The winning hangout location changes.
+The hangout schedule changes.
+Someone sends a message.
+Someone uploads a snap.
+A contribution amount is updated.
+A new lending record is created.
+A loan is marked as repaid.
+9. User Experience & Design
+
+The application should have a fun, modern, mobile-friendly interface.
+
+Design requirements:
+
+Responsive layout for mobile and desktop.
+Dark mode support.
+Clean dashboard cards.
+Friendly social atmosphere.
+Smooth animations.
+Real-time updates without page refreshes.
+
+The vibe should feel like:
+
+"A private social network built specifically for a tight-knit friend group."
+
+10. Technical Requirements
+
+Use the following stack:
+
+Frontend
+Next.js (App Router)
+TypeScript
+Tailwind CSS
+shadcn/ui
+Lucide Icons
+Backend
+Supabase
+
+Use Supabase for:
+
+Authentication
+PostgreSQL Database
+Realtime subscriptions
+Storage (image uploads)
+Database Entities
+Users
+id
+name
+email
+avatar_url
+created_at
+Hangout Locations
+id
+name
+
+Seed with:
+
+Rafir Chaad
+Ratul er Basha
+Saif er Chaad
+Mushfiq er Chaad
+Rejar Chaad
+300 Feet
+Votes
+id
+user_id
+location_id
+created_at
+
+Constraint:
+
+One active vote per user.
+Hangout Schedule
+id
+date
+time
+updated_by
+updated_at
+Messages
+id
+user_id
+message_text
+image_url
+created_at
+Message Reactions
+id
+message_id
+user_id
+emoji
+Contributions
+id
+user_id
+amount
+updated_at
+Lending Records
+id
+lender_id
+borrower_id
+amount
+note
+status
+created_at
+repaid_at
+
+Status values:
+
+active
+repaid
+Pages
+Landing Page
+Sign Up
+Login
+Dashboard
+Voting Section
+Group Chat
+Contributions Page
+Lending Tracker
+User Profile
+Final Goal
+
+Build a production-ready MVP called Podcast that helps a close group of friends:
+
+Decide where to hang out,
+Communicate in one place,
+Track who is contributing money,
+Keep lending records transparent,
+And make organizing regular hangouts effortless and fun.
+
+The application should prioritize simplicity, real-time collaboration, and transparency among friends.
