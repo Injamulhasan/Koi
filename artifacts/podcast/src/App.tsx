@@ -6,6 +6,7 @@ import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wo
 import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { WsProvider } from "@/context/ws-context";
 
 import NotFound from "@/pages/not-found";
 import Layout from "@/components/layout";
@@ -169,6 +170,7 @@ function ClerkProviderWithRoutes() {
     >
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
+        <WsProvider>
         <Switch>
           <Route path="/" component={HomeRedirect} />
           <Route path="/sign-in/*?" component={SignInPage} />
@@ -183,6 +185,7 @@ function ClerkProviderWithRoutes() {
           <Route path="/notifications" component={() => <ProtectedRoute component={NotificationsPage} />} />
           <Route component={NotFound} />
         </Switch>
+        </WsProvider>
       </QueryClientProvider>
     </ClerkProvider>
   );

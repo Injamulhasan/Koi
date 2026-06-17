@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, contributionsTable, usersTable, notificationsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { requireDbUser } from "../middlewares/requireAuth";
+import { broadcast } from "../lib/wsServer";
 
 const router = Router();
 
@@ -66,14 +67,16 @@ router.put("/contributions/me", requireDbUser, async (req, res): Promise<void> =
     );
   }
 
-  res.json({
+  const payload = {
     id: contribution.id,
     userId: contribution.userId,
     userName: user.name,
     userAvatarUrl: user.avatarUrl ?? null,
     amount: parseFloat(contribution.amount),
     updatedAt: contribution.updatedAt.toISOString(),
-  });
+  };
+  broadcast("contribution:updated", payload);
+  res.json(payload);
 });
 
 export default router;

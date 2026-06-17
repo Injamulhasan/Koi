@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, votesTable, usersTable, locationsTable, notificationsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { requireDbUser } from "../middlewares/requireAuth";
+import { broadcast } from "../lib/wsServer";
 
 const router = Router();
 
@@ -108,7 +109,7 @@ router.post("/votes", requireDbUser, async (req, res): Promise<void> => {
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
   await broadcastNotification(db, userId, "vote", `${user.name} voted for ${location.name}`);
 
-  res.json({
+  const payload = {
     id: vote.id,
     userId: vote.userId,
     locationId: vote.locationId,
@@ -116,7 +117,9 @@ router.post("/votes", requireDbUser, async (req, res): Promise<void> => {
     userName: user.name,
     userAvatarUrl: user.avatarUrl ?? null,
     createdAt: vote.createdAt.toISOString(),
-  });
+  };
+  broadcast("vote:cast", payload);
+  res.json(payload);
 });
 
 router.delete("/votes/my", requireDbUser, async (req, res): Promise<void> => {

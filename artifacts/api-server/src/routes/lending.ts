@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, lendingRecordsTable, usersTable, notificationsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { requireDbUser } from "../middlewares/requireAuth";
+import { broadcast } from "../lib/wsServer";
 
 const router = Router();
 
@@ -91,7 +92,7 @@ router.post("/lending", requireDbUser, async (req, res): Promise<void> => {
     );
   }
 
-  res.status(201).json({
+  const newPayload = {
     id: record.id,
     lenderId: record.lenderId,
     lenderName: lender.name,
@@ -104,7 +105,9 @@ router.post("/lending", requireDbUser, async (req, res): Promise<void> => {
     status: record.status,
     createdAt: record.createdAt.toISOString(),
     repaidAt: null,
-  });
+  };
+  broadcast("lending:new", newPayload);
+  res.status(201).json(newPayload);
 });
 
 router.patch("/lending/:id", requireDbUser, async (req, res): Promise<void> => {
@@ -125,7 +128,7 @@ router.patch("/lending/:id", requireDbUser, async (req, res): Promise<void> => {
   const [lender] = await db.select().from(usersTable).where(eq(usersTable.id, lenderId));
   const [borrower] = await db.select().from(usersTable).where(eq(usersTable.id, updated.borrowerId));
 
-  res.json({
+  const patchPayload = {
     id: updated.id,
     lenderId: updated.lenderId,
     lenderName: lender.name,
@@ -138,7 +141,9 @@ router.patch("/lending/:id", requireDbUser, async (req, res): Promise<void> => {
     status: updated.status,
     createdAt: updated.createdAt.toISOString(),
     repaidAt: updated.repaidAt?.toISOString() ?? null,
-  });
+  };
+  broadcast("lending:updated", patchPayload);
+  res.json(patchPayload);
 });
 
 router.delete("/lending/:id", requireDbUser, async (req, res): Promise<void> => {
@@ -184,7 +189,7 @@ router.post("/lending/:id/repaid", requireDbUser, async (req, res): Promise<void
     );
   }
 
-  res.json({
+  const repaidPayload = {
     id: updated.id,
     lenderId: updated.lenderId,
     lenderName: lender.name,
@@ -197,7 +202,9 @@ router.post("/lending/:id/repaid", requireDbUser, async (req, res): Promise<void
     status: updated.status,
     createdAt: updated.createdAt.toISOString(),
     repaidAt: updated.repaidAt?.toISOString() ?? null,
-  });
+  };
+  broadcast("lending:updated", repaidPayload);
+  res.json(repaidPayload);
 });
 
 export default router;

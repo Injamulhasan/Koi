@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, messagesTable, messageReactionsTable, usersTable, notificationsTable } from "@workspace/db";
 import { eq, desc, lt, sql, and } from "drizzle-orm";
 import { requireDbUser } from "../middlewares/requireAuth";
+import { broadcast } from "../lib/wsServer";
 
 const router = Router();
 
@@ -94,7 +95,7 @@ router.post("/messages", requireDbUser, async (req, res): Promise<void> => {
     );
   }
 
-  res.status(201).json({
+  const payload = {
     id: msg.id,
     userId: msg.userId,
     userName: user.name,
@@ -103,7 +104,10 @@ router.post("/messages", requireDbUser, async (req, res): Promise<void> => {
     imageUrl: msg.imageUrl ?? null,
     createdAt: msg.createdAt.toISOString(),
     reactions: [],
-  });
+  };
+
+  broadcast("message:new", payload);
+  res.status(201).json(payload);
 });
 
 router.delete("/messages/:id", requireDbUser, async (req, res): Promise<void> => {
@@ -162,7 +166,9 @@ router.post("/messages/:id/reactions", requireDbUser, async (req, res): Promise<
     s.userIds.push(r.userId);
   }
 
-  res.json(Array.from(summaryMap.values()));
+  const reactions = Array.from(summaryMap.values());
+  broadcast("message:reaction", { messageId, reactions });
+  res.json(reactions);
 });
 
 export default router;

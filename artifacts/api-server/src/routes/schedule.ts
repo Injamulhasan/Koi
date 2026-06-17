@@ -2,6 +2,7 @@ import { Router } from "express";
 import { db, scheduleTable, usersTable, notificationsTable } from "@workspace/db";
 import { eq, sql } from "drizzle-orm";
 import { requireDbUser } from "../middlewares/requireAuth";
+import { broadcast } from "../lib/wsServer";
 
 const router = Router();
 
@@ -72,14 +73,16 @@ router.put("/schedule", requireDbUser, async (req, res): Promise<void> => {
     );
   }
 
-  res.json({
+  const payload = {
     id: schedule.id,
     date: schedule.date,
     time: schedule.time,
     updatedBy: schedule.updatedBy ?? null,
     updatedByName: user.name,
     updatedAt: schedule.updatedAt.toISOString(),
-  });
+  };
+  broadcast("schedule:updated", payload);
+  res.json(payload);
 });
 
 export default router;

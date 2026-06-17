@@ -21,8 +21,7 @@ export default function ChatPage() {
   const [showImageInput, setShowImageInput] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Poll every 3 seconds for new messages
-  const { data: messages, isLoading } = useListMessages({ query: { refetchInterval: 3000 } });
+  const { data: messages, isLoading } = useListMessages();
   const sendMessage = useSendMessage();
   const addReaction = useAddReaction();
 
