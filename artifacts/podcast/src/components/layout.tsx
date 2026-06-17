@@ -2,10 +2,7 @@ import { Link, useLocation } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
 import { 
   Home, 
-  MapPin, 
   MessageSquare, 
-  Calendar, 
-  Wallet, 
   HandCoins, 
   UserCircle, 
   Bell, 
@@ -30,10 +27,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: "/dashboard", label: "Dashboard", icon: Home },
-    { href: "/vote", label: "Vote", icon: MapPin },
     { href: "/chat", label: "Chat", icon: MessageSquare },
-    { href: "/schedule", label: "Schedule", icon: Calendar },
-    { href: "/contributions", label: "Contributions", icon: Wallet },
     { href: "/lending", label: "Lending", icon: HandCoins },
     { href: "/notifications", label: "Notifications", icon: Bell, badge: unreadCount },
     { href: "/profile", label: "Profile", icon: UserCircle },
@@ -174,7 +168,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       
       {/* Bottom Nav (Mobile Only) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-background/90 backdrop-blur-lg border-t border-border z-30 flex items-center justify-around px-2">
-        {navItems.slice(0, 5).map((item) => {
+        {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = location === item.href;
           return (
@@ -184,6 +178,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                   <span className="absolute -top-[1px] left-1/2 -translate-x-1/2 w-8 h-1 bg-primary rounded-b-full"></span>
                 )}
                 <Icon className={cn("w-6 h-6 mb-1 transition-colors", isActive ? "text-primary" : "text-muted-foreground")} />
+                {item.badge && item.badge > 0 ? (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full"></span>
+                ) : null}
               </div>
             </Link>
           );

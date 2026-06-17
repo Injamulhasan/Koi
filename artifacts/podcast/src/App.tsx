@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { ClerkProvider, SignIn, SignUp, Show, useClerk } from '@clerk/react';
+import { ClerkProvider, SignIn, SignUp, Show, useClerk, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
@@ -133,6 +133,33 @@ function ProtectedRoute({ component: Component }: { component: any }) {
   );
 }
 
+function UserSync() {
+  const { isLoaded, isSignedIn, user } = useUser();
+  const queryClient = useQueryClient();
+  const hasSynced = useRef(false);
+
+  useEffect(() => {
+    if (!isLoaded || !isSignedIn || !user) return;
+    if (hasSynced.current) return;
+    hasSynced.current = true;
+
+    fetch("/api/users/sync", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        name: user.fullName || user.firstName || "Friend",
+        email: user.primaryEmailAddress?.emailAddress || "",
+        avatarUrl: user.imageUrl || null,
+      }),
+    })
+      .then(() => queryClient.invalidateQueries())
+      .catch(() => {});
+  }, [isLoaded, isSignedIn, user, queryClient]);
+
+  return null;
+}
+
 function ClerkQueryClientCacheInvalidator() {
   const { addListener } = useClerk();
   const queryClient = useQueryClient();
@@ -170,6 +197,7 @@ function ClerkProviderWithRoutes() {
     >
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
+        <UserSync />
         <WsProvider>
         <Switch>
           <Route path="/" component={HomeRedirect} />

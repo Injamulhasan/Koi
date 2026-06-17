@@ -1,7 +1,8 @@
-import { getAuth } from "@clerk/express";
+import { getAuth, clerkClient } from "@clerk/express";
 import type { Request, Response, NextFunction } from "express";
 import { db, usersTable } from "@workspace/db";
 import { eq } from "drizzle-orm";
+import { logger } from "../lib/logger";
 
 declare global {
   namespace Express {
@@ -38,11 +39,28 @@ export const requireDbUser = async (req: Request, res: Response, next: NextFunct
   }
   req.clerkUserId = clerkUserId;
 
-  const [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkUserId));
+  let [user] = await db.select().from(usersTable).where(eq(usersTable.clerkId, clerkUserId));
+
   if (!user) {
-    res.status(404).json({ error: "User not found. Please complete signup." });
-    return;
+    try {
+      const clerkUser = await clerkClient.users.getUser(clerkUserId);
+      const name = [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") || "Friend";
+      const email = clerkUser.emailAddresses[0]?.emailAddress ?? "";
+      const avatarUrl = clerkUser.imageUrl ?? null;
+
+      const [created] = await db
+        .insert(usersTable)
+        .values({ clerkId: clerkUserId, name, email, avatarUrl })
+        .returning();
+      user = created;
+      logger.info({ clerkUserId, name }, "Auto-created DB user from Clerk");
+    } catch (err) {
+      logger.error({ err, clerkUserId }, "Failed to auto-create user from Clerk");
+      res.status(500).json({ error: "Failed to provision user account" });
+      return;
+    }
   }
+
   req.dbUserId = user.id;
   next();
 };
