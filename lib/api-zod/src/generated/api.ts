@@ -17,11 +17,61 @@ export const HealthCheckResponse = zod.object({
 
 
 /**
+ * @summary Register a new user
+ */
+export const SignupBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string(),
+  "name": zod.string(),
+  "avatarUrl": zod.string().nullish()
+})
+
+
+/**
+ * @summary Authenticate user and get session
+ */
+export const LoginBody = zod.object({
+  "email": zod.string(),
+  "password": zod.string()
+})
+
+export const LoginResponse = zod.object({
+  "id": zod.number(),
+  "clerkId": zod.string().nullable(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Terminate user session
+ */
+export const LogoutResponse = zod.object({
+  "success": zod.boolean()
+})
+
+
+/**
+ * @summary Get current authenticated user details
+ */
+export const GetMeResponse = zod.object({
+  "id": zod.number(),
+  "clerkId": zod.string().nullable(),
+  "name": zod.string(),
+  "email": zod.string(),
+  "avatarUrl": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
  * @summary Get current user profile
  */
 export const GetCurrentUserResponse = zod.object({
   "id": zod.number(),
-  "clerkId": zod.string(),
+  "clerkId": zod.string().nullable(),
   "name": zod.string(),
   "email": zod.string(),
   "avatarUrl": zod.string().nullish(),
@@ -39,7 +89,7 @@ export const UpdateCurrentUserBody = zod.object({
 
 export const UpdateCurrentUserResponse = zod.object({
   "id": zod.number(),
-  "clerkId": zod.string(),
+  "clerkId": zod.string().nullable(),
   "name": zod.string(),
   "email": zod.string(),
   "avatarUrl": zod.string().nullish(),
@@ -52,7 +102,7 @@ export const UpdateCurrentUserResponse = zod.object({
  */
 export const ListUsersResponseItem = zod.object({
   "id": zod.number(),
-  "clerkId": zod.string(),
+  "clerkId": zod.string().nullable(),
   "name": zod.string(),
   "email": zod.string(),
   "avatarUrl": zod.string().nullish(),

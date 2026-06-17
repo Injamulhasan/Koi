@@ -21,10 +21,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MapPin, Calendar, MessageSquare, Wallet, HandCoins,
-  Trophy, CheckCircle2, Clock, Edit3, ArrowRight, Loader2
+  Trophy, CheckCircle2, Clock, Edit3, ArrowRight, Loader2,
+  Sparkles, Check, Send, Coins
 } from "lucide-react";
 import { Link } from "wouter";
 import { format, formatDistanceToNow, isPast } from "date-fns";
@@ -47,7 +49,259 @@ function SectionHeader({ icon: Icon, title, color = "text-primary" }: {
   );
 }
 
-// ── Vote section ─────────────────────────────────────────────────────────────
+// ── Active Planning Hub (Top Banner) ──────────────────────────────────────────
+function ActivePlanningHub() {
+  const queryClient = useQueryClient();
+  const { user: currentUser } = useUser();
+
+  const { data: locations, isLoading: loadingLocs } = useListLocations();
+  const { data: votes } = useListVotes();
+  const { data: myVote } = useGetMyVote();
+  const castVote = useCastVote();
+
+  const { data: schedule, isLoading: loadingSchedule } = useGetSchedule();
+  const updateSchedule = useUpdateSchedule();
+  const [dateStr, setDateStr] = useState("");
+  const [timeStr, setTimeStr] = useState("");
+  const [isEditingSchedule, setIsEditingSchedule] = useState(false);
+
+  const { data: contributions, isLoading: loadingContributions } = useListContributions();
+  const upsertContribution = useUpsertMyContribution();
+  const [amountInput, setAmountInput] = useState("");
+  const [isEditingContribution, setIsEditingContribution] = useState(false);
+
+  // Sync state
+  useEffect(() => {
+    if (schedule && !isEditingSchedule) {
+      setDateStr(schedule.date);
+      setTimeStr(schedule.time);
+    }
+  }, [schedule, isEditingSchedule]);
+
+  const myContribution = contributions?.find(c =>
+    c.userName === (currentUser?.fullName || currentUser?.firstName)
+  );
+
+  useEffect(() => {
+    if (myContribution && !isEditingContribution) {
+      setAmountInput(myContribution.amount.toString());
+    }
+  }, [myContribution, isEditingContribution]);
+
+  // Calculations
+  const totalBudget = contributions?.reduce((s, c) => s + c.amount, 0) || 0;
+
+  const votesByLocation = useMemo(() => {
+    if (!votes) return {} as Record<number, typeof votes>;
+    return votes.reduce((acc, v) => {
+      if (!acc[v.locationId]) acc[v.locationId] = [];
+      acc[v.locationId].push(v);
+      return acc;
+    }, {} as Record<number, typeof votes>);
+  }, [votes]);
+
+  const leadingLocation = useMemo(() => {
+    if (!locations || locations.length === 0) return null;
+    const sorted = [...locations].sort((a, b) => b.voteCount - a.voteCount);
+    return sorted[0].voteCount > 0 ? sorted[0] : null;
+  }, [locations]);
+
+  const scheduleDate = schedule?.date && schedule?.time
+    ? new Date(`${schedule.date}T${schedule.time}`) : null;
+  const isSchedulePast = scheduleDate ? isPast(scheduleDate) : false;
+
+  // Handlers
+  const handleVoteSelect = (val: string) => {
+    const locationId = Number(val);
+    castVote.mutate({ data: { locationId } }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListVotesQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetMyVoteQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListLocationsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+        toast.success("Vote updated successfully!");
+      },
+      onError: () => toast.error("Failed to update vote"),
+    });
+  };
+
+  const handleSaveSchedule = () => {
+    if (!dateStr || !timeStr) { toast.error("Date and time required"); return; }
+    updateSchedule.mutate({ data: { date: dateStr, time: timeStr } }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetScheduleQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+        toast.success("Meeting schedule updated!");
+        setIsEditingSchedule(false);
+      },
+      onError: () => toast.error("Failed to update schedule"),
+    });
+  };
+
+  const handleSaveContribution = () => {
+    const amount = Number(amountInput);
+    if (isNaN(amount) || amount < 0) { toast.error("Enter a valid amount"); return; }
+    upsertContribution.mutate({ data: { amount } }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListContributionsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+        toast.success("Your contribution has been updated!");
+        setIsEditingContribution(false);
+      },
+      onError: () => toast.error("Failed to update contribution"),
+    });
+  };
+
+  if (loadingLocs || loadingSchedule || loadingContributions) {
+    return <Skeleton className="h-64 rounded-xl w-full" />;
+  }
+
+  return (
+    <Card className="relative overflow-hidden border-2 border-primary/30 bg-gradient-to-br from-card via-card to-primary/5 shadow-[8px_8px_0_hsl(var(--primary)/0.2)] rounded-xl">
+      <div className="absolute top-0 right-0 p-3 flex items-center gap-1.5 z-10">
+        <span className="relative flex h-2.5 w-2.5">
+          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+        </span>
+        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Live Sync Active</span>
+      </div>
+
+      <CardHeader className="pb-3 border-b border-border/40">
+        <CardTitle className="text-lg flex items-center gap-2 text-foreground font-black">
+          <Sparkles className="w-5 h-5 text-primary" /> ACTIVE HANGOUT PLAN
+        </CardTitle>
+      </CardHeader>
+
+      <CardContent className="p-6 space-y-6">
+        {/* Banner Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Location Summary */}
+          <div className="flex items-start gap-3 p-3.5 bg-background/50 border border-border/40 rounded-lg">
+            <div className="w-8 h-8 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+              <MapPin className="w-4 h-4 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Proposed Spot</p>
+              <h4 className="font-extrabold text-sm truncate mt-0.5">
+                {leadingLocation ? leadingLocation.name : "No votes cast"}
+              </h4>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {leadingLocation ? `${leadingLocation.voteCount} vote(s) cast` : "Be the first to vote!"}
+              </p>
+            </div>
+          </div>
+
+          {/* Time Summary */}
+          <div className="flex items-start gap-3 p-3.5 bg-background/50 border border-border/40 rounded-lg">
+            <div className="w-8 h-8 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center shrink-0">
+              <Calendar className="w-4 h-4 text-accent" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Scheduled Time</p>
+              <h4 className="font-extrabold text-sm truncate mt-0.5">
+                {scheduleDate ? format(scheduleDate, "EEE, MMM d, h:mm a") : "No date decided"}
+              </h4>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                {scheduleDate && !isSchedulePast
+                  ? `Starts in ${formatDistanceToNow(scheduleDate)}`
+                  : isSchedulePast ? "Event is past" : "Waiting for date"}
+              </p>
+            </div>
+          </div>
+
+          {/* Budget Pool Summary */}
+          <div className="flex items-start gap-3 p-3.5 bg-background/50 border border-border/40 rounded-lg">
+            <div className="w-8 h-8 rounded-full bg-secondary/10 border border-secondary/20 flex items-center justify-center shrink-0">
+              <Wallet className="w-4 h-4 text-secondary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Total Budget Pool</p>
+              <h4 className="font-extrabold text-sm truncate mt-0.5">৳ {totalBudget}</h4>
+              <p className="text-[10px] text-muted-foreground mt-0.5">
+                From {contributions?.length || 0} crew contributors
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Unified Quick Controls */}
+        <div className="p-4 bg-secondary/5 border border-border/60 rounded-xl space-y-4">
+          <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Quick Plan Update</h4>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
+            {/* Choose Spot Input */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                <MapPin className="w-3.5 h-3.5 text-primary" /> Cast / Update Vote
+              </label>
+              <Select onValueChange={handleVoteSelect} value={myVote?.locationId?.toString() || ""}>
+                <SelectTrigger className="w-full bg-background border-border text-xs h-10">
+                  <SelectValue placeholder="Choose one of the 6 spots" />
+                </SelectTrigger>
+                <SelectContent className="bg-card border-card-border">
+                  {locations?.map((loc) => (
+                    <SelectItem key={loc.id} value={loc.id.toString()} className="text-xs">
+                      {loc.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Set Hangout Time Input */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                <Calendar className="w-3.5 h-3.5 text-accent" /> Set Date & Time
+              </label>
+              {isEditingSchedule ? (
+                <div className="flex gap-2 items-center">
+                  <Input type="date" value={dateStr} onChange={e => setDateStr(e.target.value)}
+                    className="w-1/2 h-10 bg-background border-border text-xs" />
+                  <Input type="time" value={timeStr} onChange={e => setTimeStr(e.target.value)}
+                    className="w-1/2 h-10 bg-background border-border text-xs" />
+                  <Button size="icon" className="h-10 w-10 shrink-0 bg-accent text-accent-foreground" onClick={handleSaveSchedule}>
+                    <Check className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="outline" className="w-full justify-between h-10 text-left font-normal bg-background text-xs border-border" onClick={() => setIsEditingSchedule(true)}>
+                  <span className="truncate">{scheduleDate ? format(scheduleDate, "EEE, MMM d, h:mm a") : "Schedule Hangout"}</span>
+                  <Edit3 className="w-3.5 h-3.5 text-muted-foreground ml-2" />
+                </Button>
+              )}
+            </div>
+
+            {/* Set Contribution Input */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                <Coins className="w-3.5 h-3.5 text-secondary" /> Add Contribution
+              </label>
+              {isEditingContribution ? (
+                <div className="flex gap-2 items-center">
+                  <div className="relative flex-1">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">৳</span>
+                    <Input type="number" placeholder="0" value={amountInput} onChange={e => setAmountInput(e.target.value)}
+                      className="pl-6 h-10 bg-background border-border text-xs" />
+                  </div>
+                  <Button size="icon" className="h-10 w-10 shrink-0 bg-secondary text-secondary-foreground" onClick={handleSaveContribution}>
+                    <Check className="w-4 h-4" />
+                  </Button>
+                </div>
+              ) : (
+                <Button variant="outline" className="w-full justify-between h-10 text-left font-normal bg-background text-xs border-border" onClick={() => setIsEditingContribution(true)}>
+                  <span>{myContribution ? `My Contribution: ৳${myContribution.amount}` : "Declare Budget"}</span>
+                  <Edit3 className="w-3.5 h-3.5 text-muted-foreground ml-2" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Vote section (Alternative Details view) ─────────────────────────────────────────────────────────────
 function VoteSection() {
   const queryClient = useQueryClient();
   const { data: locations, isLoading: loadingLocs } = useListLocations();
@@ -381,24 +635,29 @@ export default function DashboardPage() {
       </div>
 
       <motion.div variants={container} initial="hidden" animate="show" className="space-y-8">
+        
+        {/* Active Planning Banner (Top of Dashboard) */}
+        <motion.div variants={item}>
+          <ActivePlanningHub />
+        </motion.div>
 
         {/* Unified Hangout Planning Control Center */}
-        <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
           {/* Vote section (takes 2/3 width on desktop) */}
           <div className="lg:col-span-2 space-y-4">
-            <SectionHeader icon={MapPin} title="Gonotontro - Where to next?" color="text-primary" />
+            <SectionHeader icon={MapPin} title="Detailed Location Votes" color="text-primary" />
             <VoteSection />
           </div>
 
           {/* Schedule & Budget (stacked on 1/3 width on desktop) */}
           <div className="space-y-6">
             <div className="space-y-4">
-              <SectionHeader icon={Calendar} title="Schedule" color="text-accent" />
+              <SectionHeader icon={Calendar} title="Schedule Info" color="text-accent" />
               <ScheduleSection />
             </div>
 
             <div className="space-y-4">
-              <SectionHeader icon={Wallet} title="Budget Pool" color="text-secondary" />
+              <SectionHeader icon={Wallet} title="Budget Pool Details" color="text-secondary" />
               <ContributionsSection />
             </div>
           </div>

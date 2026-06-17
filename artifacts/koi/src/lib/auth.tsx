@@ -1,320 +1,396 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import * as ClerkReact from "@clerk/react";
+import React, { createContext, useContext, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useQueryClient } from "@tanstack/react-query";
+import {
+  useGetMe,
+  useLogin,
+  useSignup,
+  useLogout,
+  getGetMeQueryKey,
+} from "@workspace/api-client-react";
+import type { UserProfile } from "@workspace/api-client-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent } from "@/components/ui/card";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-// Determine if Clerk keys are present
-export const isClerkEnabled = !!(import.meta.env.VITE_CLERK_PUBLISHABLE_KEY);
-
-// ─────────────────────────────────────────────────────────────────────────────
-// PREDEFINED MOCK USERS
-// ─────────────────────────────────────────────────────────────────────────────
-export interface MockUser {
-  id: string;
-  name: string;
-  email: string;
-  avatarUrl: string;
-}
-
-export const MOCK_USERS: MockUser[] = [
-  { id: "mock_rafir", name: "Rafir", email: "rafir@example.com", avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Rafir" },
-  { id: "mock_ratul", name: "Ratul", email: "ratul@example.com", avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Ratul" },
-  { id: "mock_saif", name: "Saif", email: "saif@example.com", avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Saif" },
-  { id: "mock_mushfiq", name: "Mushfiq", email: "mushfiq@example.com", avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Mushfiq" },
-  { id: "mock_reja", name: "Reja", email: "reja@example.com", avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Reja" },
-  { id: "mock_injam", name: "Injam", email: "injam@example.com", avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Injam" },
+// Predefined mock avatars/users for quick selection
+export const PRESETS = [
+  { name: "Rafir", email: "rafir@example.com", avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Rafir" },
+  { name: "Ratul", email: "ratul@example.com", avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Ratul" },
+  { name: "Saif", email: "saif@example.com", avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Saif" },
+  { name: "Mushfiq", email: "mushfiq@example.com", avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Mushfiq" },
+  { name: "Reja", email: "reja@example.com", avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Reja" },
+  { name: "Injam", email: "injam@example.com", avatarUrl: "https://api.dicebear.com/7.x/pixel-art/svg?seed=Injam" },
 ];
 
-// ─────────────────────────────────────────────────────────────────────────────
-// MOCK AUTH CONTEXT & PROVIDER
-// ─────────────────────────────────────────────────────────────────────────────
-interface MockAuthContextType {
-  currentUser: MockUser | null;
-  login: (user: MockUser) => void;
-  register: (name: string, email: string) => void;
-  logout: () => void;
+interface AuthContextType {
+  user: UserProfile | null;
+  isLoading: boolean;
+  isSignedIn: boolean;
 }
 
-const MockAuthContext = createContext<MockAuthContextType | null>(null);
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  isLoading: true,
+  isSignedIn: false,
+});
 
-export function ClerkProvider({ children, ...props }: any) {
-  if (isClerkEnabled) {
-    return <ClerkReact.ClerkProvider {...props}>{children}</ClerkReact.ClerkProvider>;
-  }
-
-  return <MockAuthProvider>{children}</MockAuthProvider>;
-}
-
-function MockAuthProvider({ children }: { children: React.ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<MockUser | null>(() => {
-    const saved = localStorage.getItem("mock_clerk_user");
-    return saved ? JSON.parse(saved) : null;
+export function ClerkProvider({ children }: { children: React.ReactNode }) {
+  const { data: user, isLoading, error } = useGetMe({
+    query: {
+      queryKey: getGetMeQueryKey(),
+      retry: false,
+      staleTime: 5 * 60 * 1000,
+    },
   });
-  const [, setLocation] = useLocation();
-  const queryClient = useQueryClient();
 
-  const syncUserWithDb = async (user: MockUser) => {
-    try {
-      localStorage.setItem("mock_clerk_id", user.id);
-      localStorage.setItem("mock_clerk_user", JSON.stringify(user));
-      
-      const response = await fetch("/api/users/sync", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Mock-User-Id": user.id,
-        },
-        body: JSON.stringify({
-          name: user.name,
-          email: user.email,
-          avatarUrl: user.avatarUrl,
-        }),
-      });
-
-      if (response.ok) {
-        queryClient.invalidateQueries();
-      }
-    } catch (e) {
-      console.error("Failed to sync mock user with DB", e);
-    }
-  };
-
-  const login = (user: MockUser) => {
-    setCurrentUser(user);
-    syncUserWithDb(user).then(() => {
-      setLocation("/dashboard");
-    });
-  };
-
-  const register = (name: string, email: string) => {
-    const seed = name.trim().replace(/\s+/g, "");
-    const newUser: MockUser = {
-      id: `mock_${Date.now()}`,
-      name,
-      email: email || `${seed.toLowerCase()}@mock.com`,
-      avatarUrl: `https://api.dicebear.com/7.x/pixel-art/svg?seed=${encodeURIComponent(seed)}`,
-    };
-    login(newUser);
-  };
-
-  const logout = () => {
-    setCurrentUser(null);
-    localStorage.removeItem("mock_clerk_id");
-    localStorage.removeItem("mock_clerk_user");
-    queryClient.clear();
-    setLocation("/");
-  };
+  const isSignedIn = !!user && !error;
 
   return (
-    <MockAuthContext.Provider value={{ currentUser, login, register, logout }}>
+    <AuthContext.Provider value={{ user: user ?? null, isLoading, isSignedIn }}>
       {children}
-    </MockAuthContext.Provider>
+    </AuthContext.Provider>
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ADAPTER HOOKS
-// ─────────────────────────────────────────────────────────────────────────────
 export function useUser() {
-  if (isClerkEnabled) {
-    return ClerkReact.useUser();
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const context = useContext(MockAuthContext);
-  if (!context) throw new Error("useUser must be used within MockAuthProvider");
-
-  const { currentUser } = context;
-
-  if (!currentUser) {
-    return {
-      isLoaded: true,
-      isSignedIn: false,
-      user: null,
-    };
-  }
-
-  const parts = currentUser.name.split(" ");
-  const firstName = parts[0] || "Friend";
-  const lastName = parts.slice(1).join(" ") || "";
-
+  const { user, isLoading, isSignedIn } = useContext(AuthContext);
   return {
-    isLoaded: true,
-    isSignedIn: true,
-    user: {
-      id: currentUser.id,
-      fullName: currentUser.name,
-      firstName,
-      lastName,
-      imageUrl: currentUser.avatarUrl,
-      primaryEmailAddress: {
-        emailAddress: currentUser.email,
-      },
-    },
+    isLoaded: !isLoading,
+    isSignedIn,
+    user: user
+      ? {
+          id: user.clerkId || `user_${user.id}`,
+          fullName: user.name,
+          firstName: user.name.split(" ")[0] || user.name,
+          lastName: user.name.split(" ").slice(1).join(" ") || "",
+          imageUrl: user.avatarUrl || `https://api.dicebear.com/7.x/pixel-art/svg?seed=${user.name}`,
+          primaryEmailAddress: {
+            emailAddress: user.email,
+          },
+        }
+      : null,
   };
 }
 
 export function useAuth() {
-  if (isClerkEnabled) {
-    return ClerkReact.useAuth();
-  }
+  const { user, isLoading, isSignedIn } = useContext(AuthContext);
+  const logoutMutation = useLogout();
+  const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const context = useContext(MockAuthContext);
-  if (!context) throw new Error("useAuth must be used within MockAuthProvider");
-
-  const { currentUser, logout } = context;
+  const signOut = async () => {
+    await logoutMutation.mutateAsync(undefined, {
+      onSuccess: () => {
+        queryClient.setQueryData(getGetMeQueryKey(), null);
+        queryClient.clear();
+        setLocation("/");
+      },
+    });
+  };
 
   return {
-    isLoaded: true,
-    isSignedIn: !!currentUser,
-    userId: currentUser?.id ?? null,
-    signOut: async () => {
-      logout();
-    },
+    isLoaded: !isLoading,
+    isSignedIn,
+    userId: user ? user.clerkId || `user_${user.id}` : null,
+    signOut,
   };
 }
 
 export function useClerk(): any {
-  if (isClerkEnabled) {
-    return ClerkReact.useClerk();
-  }
-
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const context = useContext(MockAuthContext);
-  if (!context) throw new Error("useClerk must be used within MockAuthProvider");
-
-  const { currentUser, logout } = context;
-
-  const parts = currentUser?.name.split(" ") || [];
-  const firstName = parts[0] || "Friend";
-  const lastName = parts.slice(1).join(" ") || "";
-
+  const { signOut } = useAuth();
+  const { user } = useUser();
   return {
-    user: currentUser ? {
-      id: currentUser.id,
-      fullName: currentUser.name,
-      firstName,
-      lastName,
-      imageUrl: currentUser.avatarUrl,
-      primaryEmailAddress: {
-        emailAddress: currentUser.email,
-      },
-    } : null,
-    signOut: async () => {
-      logout();
-    },
-    addListener: () => {
-      return () => {};
-    }
+    user,
+    signOut,
+    addListener: () => () => {},
   };
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// ADAPTER COMPONENTS
-// ─────────────────────────────────────────────────────────────────────────────
-export function Show({ when, children }: { when: "signed-in" | "signed-out"; children: React.ReactNode }) {
-  if (isClerkEnabled) {
-    return <ClerkReact.Show when={when === "signed-in" ? "signed-in" : "signed-out"}>{children}</ClerkReact.Show>;
-  }
+export function Show({
+  when,
+  children,
+}: {
+  when: "signed-in" | "signed-out";
+  children: React.ReactNode;
+}) {
+  const { isSignedIn, isLoading } = useContext(AuthContext);
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const { isSignedIn } = useAuth();
+  if (isLoading) return null;
   if (when === "signed-in" && isSignedIn) return <>{children}</>;
   if (when === "signed-out" && !isSignedIn) return <>{children}</>;
   return null;
 }
 
-// Custom Mock Sign In Component
 export function SignIn() {
-  if (isClerkEnabled) {
-    return <ClerkReact.SignIn />;
-  }
+  const loginMutation = useLogin();
+  const signupMutation = useSignup();
+  const queryClient = useQueryClient();
+  const [, setLocation] = useLocation();
 
-  // eslint-disable-next-line react-hooks/rules-of-hooks
-  const context = useContext(MockAuthContext);
-  if (!context) throw new Error("SignIn must be used within MockAuthProvider");
+  const [isSignUpMode, setIsSignUpMode] = React.useState(false);
+  const [email, setEmail] = React.useState("");
+  const [password, setPassword] = React.useState("");
+  const [name, setName] = React.useState("");
+  const [avatarUrl, setAvatarUrl] = React.useState(PRESETS[0].avatarUrl);
+  const [error, setError] = React.useState("");
 
-  const { login } = context;
-  const [customName, setCustomName] = useState("");
-  const [customEmail, setCustomEmail] = useState("");
-  const [error, setError] = useState("");
-
-  const handleCustomSubmit = (e: React.FormEvent) => {
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!customName.trim()) {
-      setError("Please enter a name.");
+    setError("");
+
+    if (!email || !password) {
+      setError("Please enter both email and password.");
       return;
     }
-    context.register(customName.trim(), customEmail.trim());
+
+    loginMutation.mutate(
+      { data: { email, password } },
+      {
+        onSuccess: (data) => {
+          queryClient.setQueryData(getGetMeQueryKey(), data);
+          queryClient.invalidateQueries();
+          setLocation("/dashboard");
+        },
+        onError: (err: any) => {
+          setError(err?.data?.error || err?.message || "Invalid email or password.");
+        },
+      }
+    );
+  };
+
+  const handleSignup = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+
+    if (!email || !password || !name) {
+      setError("All fields are required.");
+      return;
+    }
+
+    signupMutation.mutate(
+      { data: { email, password, name, avatarUrl } },
+      {
+        onSuccess: (data) => {
+          queryClient.setQueryData(getGetMeQueryKey(), data);
+          queryClient.invalidateQueries();
+          setLocation("/dashboard");
+        },
+        onError: (err: any) => {
+          setError(err?.data?.error || err?.message || "Registration failed.");
+        },
+      }
+    );
+  };
+
+  const handlePresetSelect = (preset: typeof PRESETS[0]) => {
+    setEmail(preset.email);
+    setPassword("kamla123"); // Preset quick login password
+    setName(preset.name);
+    setAvatarUrl(preset.avatarUrl);
+
+    // Auto signup/login for presets
+    loginMutation.mutate(
+      { data: { email: preset.email, password: "kamla123" } },
+      {
+        onSuccess: (data) => {
+          queryClient.setQueryData(getGetMeQueryKey(), data);
+          queryClient.invalidateQueries();
+          setLocation("/dashboard");
+        },
+        onError: () => {
+          // If login fails, try to sign up
+          signupMutation.mutate(
+            { data: { email: preset.email, password: "kamla123", name: preset.name, avatarUrl: preset.avatarUrl } },
+            {
+              onSuccess: (signupData) => {
+                queryClient.setQueryData(getGetMeQueryKey(), signupData);
+                queryClient.invalidateQueries();
+                setLocation("/dashboard");
+              },
+              onError: (err: any) => {
+                setError(err?.data?.error || err?.message || "Preset login failed.");
+              },
+            }
+          );
+        },
+      }
+    );
   };
 
   return (
     <div className="w-full max-w-md p-6 bg-card border border-card-border rounded-lg shadow-[8px_8px_0_hsl(var(--primary))] text-foreground">
       <div className="text-center mb-6">
-        <h2 className="text-2xl font-black tracking-tight text-primary">Enter the Republic</h2>
-        <p className="text-sm text-muted-foreground mt-1">Select a citizen or check in with a new identity</p>
+        <h2 className="text-3xl font-black tracking-tight text-primary">
+          {isSignUpMode ? "Create Account" : "Enter the Republic"}
+        </h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          {isSignUpMode
+            ? "Register a new citizen identity"
+            : "Select a citizen or sign in with your credentials"}
+        </p>
       </div>
 
-      <div className="space-y-4 mb-6">
-        <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">Select citizen</p>
-        <div className="grid grid-cols-2 gap-2">
-          {MOCK_USERS.map((user) => (
-            <button
-              key={user.id}
-              onClick={() => login(user)}
-              className="flex items-center gap-3 p-3 bg-secondary/10 hover:bg-secondary/20 border border-border rounded-md text-left transition-colors cursor-pointer group"
-            >
-              <img
-                src={user.avatarUrl}
-                alt={user.name}
-                className="w-8 h-8 rounded-full border border-border group-hover:scale-105 transition-transform"
-              />
-              <span className="font-semibold text-sm truncate">{user.name}</span>
-            </button>
-          ))}
+      {error && (
+        <div className="bg-destructive/10 border border-destructive/30 text-destructive text-xs font-semibold p-3 rounded mb-4">
+          {error}
         </div>
-      </div>
+      )}
 
-      <div className="relative my-6 flex items-center justify-center">
-        <div className="absolute inset-x-0 h-px bg-border"></div>
-        <span className="relative bg-card px-3 text-xs font-semibold text-muted-foreground uppercase tracking-widest">Or create new citizen</span>
-      </div>
+      {/* Preset selection for quick access */}
+      {!isSignUpMode && (
+        <div className="space-y-3 mb-6">
+          <p className="text-xs font-black uppercase tracking-[0.2em] text-primary">
+            Quick Citizen Access
+          </p>
+          <div className="grid grid-cols-2 gap-2">
+            {PRESETS.map((preset) => (
+              <button
+                key={preset.email}
+                onClick={() => handlePresetSelect(preset)}
+                disabled={loginMutation.isPending || signupMutation.isPending}
+                className="flex items-center gap-3 p-2.5 bg-secondary/5 hover:bg-secondary/15 border border-border rounded-md text-left transition-all cursor-pointer group"
+              >
+                <Avatar className="w-7 h-7 border border-border group-hover:scale-105 transition-transform">
+                  <AvatarImage src={preset.avatarUrl} />
+                  <AvatarFallback className="text-[10px]">{preset.name[0]}</AvatarFallback>
+                </Avatar>
+                <span className="font-semibold text-xs truncate">{preset.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
-      <form onSubmit={handleCustomSubmit} className="space-y-4">
-        {error && <p className="text-xs text-destructive font-semibold">{error}</p>}
-        <div>
-          <label className="block text-xs font-black uppercase tracking-[0.15em] mb-1.5">Name</label>
-          <input
-            type="text"
-            placeholder="e.g. Robin"
-            value={customName}
-            onChange={(e) => { setCustomName(e.target.value); setError(""); }}
-            className="w-full h-10 px-3 bg-input border border-border rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-          />
+      {!isSignUpMode && (
+        <div className="relative my-6 flex items-center justify-center">
+          <div className="absolute inset-x-0 h-px bg-border"></div>
+          <span className="relative bg-card px-3 text-[10px] font-bold text-muted-foreground uppercase tracking-widest">
+            Or Use Account
+          </span>
         </div>
-        <div>
-          <label className="block text-xs font-black uppercase tracking-[0.15em] mb-1.5">Email (Optional)</label>
-          <input
-            type="email"
-            placeholder="robin@example.com"
-            value={customEmail}
-            onChange={(e) => setCustomEmail(e.target.value)}
-            className="w-full h-10 px-3 bg-input border border-border rounded-md text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-primary focus:border-primary"
-          />
-        </div>
+      )}
+
+      {isSignUpMode ? (
+        <form onSubmit={handleSignup} className="space-y-4">
+          <div>
+            <label className="block text-xs font-black uppercase tracking-[0.15em] mb-1.5">
+              Name
+            </label>
+            <Input
+              type="text"
+              placeholder="e.g. Robin"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full h-10 bg-input border border-border text-sm"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-black uppercase tracking-[0.15em] mb-1.5">
+              Email
+            </label>
+            <Input
+              type="email"
+              placeholder="robin@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full h-10 bg-input border border-border text-sm"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-black uppercase tracking-[0.15em] mb-1.5">
+              Password
+            </label>
+            <Input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full h-10 bg-input border border-border text-sm"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-black uppercase tracking-[0.15em] mb-2">
+              Select Avatar Seed
+            </label>
+            <div className="flex gap-2 items-center flex-wrap">
+              {PRESETS.map((preset) => (
+                <button
+                  type="button"
+                  key={preset.name}
+                  onClick={() => setAvatarUrl(preset.avatarUrl)}
+                  className={`w-9 h-9 rounded-full border-2 overflow-hidden transition-all ${
+                    avatarUrl === preset.avatarUrl ? "border-primary scale-110 shadow-sm" : "border-transparent opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  <img src={preset.avatarUrl} alt={preset.name} className="w-full h-full" />
+                </button>
+              ))}
+            </div>
+          </div>
+          <Button
+            type="submit"
+            disabled={signupMutation.isPending}
+            className="w-full h-10 bg-primary text-primary-foreground font-black text-sm rounded-md shadow-sm hover:bg-primary/90 transition-colors"
+          >
+            {signupMutation.isPending ? "Creating Citizen..." : "Sign Up"}
+          </Button>
+        </form>
+      ) : (
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div>
+            <label className="block text-xs font-black uppercase tracking-[0.15em] mb-1.5">
+              Email
+            </label>
+            <Input
+              type="email"
+              placeholder="name@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full h-10 bg-input border border-border text-sm"
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-xs font-black uppercase tracking-[0.15em] mb-1.5">
+              Password
+            </label>
+            <Input
+              type="password"
+              placeholder="••••••••"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full h-10 bg-input border border-border text-sm"
+              required
+            />
+          </div>
+          <Button
+            type="submit"
+            disabled={loginMutation.isPending}
+            className="w-full h-10 bg-primary text-primary-foreground font-black text-sm rounded-md shadow-sm hover:bg-primary/90 transition-colors"
+          >
+            {loginMutation.isPending ? "Entering..." : "Sign In"}
+          </Button>
+        </form>
+      )}
+
+      <div className="mt-6 text-center text-xs text-muted-foreground">
+        {isSignUpMode ? "Already a citizen?" : "New to the group?"}{" "}
         <button
-          type="submit"
-          className="w-full h-10 bg-primary text-primary-foreground font-black text-sm rounded-md shadow-sm hover:bg-primary/90 transition-colors cursor-pointer"
+          onClick={() => setIsSignUpMode(!isSignUpMode)}
+          className="text-primary hover:underline font-bold transition-all"
         >
-          Check In
+          {isSignUpMode ? "Sign In Instead" : "Create Citizen Identity"}
         </button>
-      </form>
+      </div>
     </div>
   );
 }
 
-// For Mock mode, sign up is the same selection as sign in
 export function SignUp() {
   return <SignIn />;
 }

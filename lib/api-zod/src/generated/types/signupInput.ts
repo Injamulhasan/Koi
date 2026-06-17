@@ -6,13 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface UserProfile {
-  id: number;
-  /** @nullable */
-  clerkId: string | null;
-  name: string;
+export interface SignupInput {
   email: string;
+  password: string;
+  name: string;
   /** @nullable */
   avatarUrl?: string | null;
-  createdAt: string;
 }

@@ -11,7 +11,8 @@ export interface HealthStatus {
 
 export interface UserProfile {
   id: number;
-  clerkId: string;
+  /** @nullable */
+  clerkId: string | null;
   name: string;
   email: string;
   /** @nullable */
@@ -23,6 +24,19 @@ export interface UserProfileInput {
   name?: string;
   /** @nullable */
   avatarUrl?: string | null;
+}
+
+export interface SignupInput {
+  email: string;
+  password: string;
+  name: string;
+  /** @nullable */
+  avatarUrl?: string | null;
+}
+
+export interface LoginInput {
+  email: string;
+  password: string;
 }
 
 export interface LocationWithVotes {
@@ -170,6 +184,10 @@ export interface DashboardSummary {
   activeLoans: number;
   unreadNotifications: number;
 }
+
+export type Logout200 = {
+  success: boolean;
+};
 
 export type ListMessagesParams = {
 limit?: number;
