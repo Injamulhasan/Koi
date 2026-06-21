@@ -18,6 +18,7 @@ export const votesTable = pgTable("votes", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
   locationId: integer("location_id").notNull().references(() => locationsTable.id, { onDelete: "cascade" }),
+  timeSlot: text("time_slot"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   unique("one_vote_per_user").on(t.userId),
@@ -75,3 +76,13 @@ export const notificationsTable = pgTable("notifications", {
   read: boolean("read").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const submissionLikesTable = pgTable("submission_likes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  targetUserId: integer("target_user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // 'like' or 'dislike'
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  unique("one_like_dislike_per_user_pair").on(t.userId, t.targetUserId),
+]);

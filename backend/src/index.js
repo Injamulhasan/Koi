@@ -16,25 +16,29 @@ const server = createServer(app);
 initWsServer(server);
 
 const DEFAULT_LOCATIONS = [
-  "Rafir Chaad",
-  "Ratul er Basha",
-  "Saif er Chaad",
-  "Mushfiq er Chaad",
-  "Rejar Chaad",
-  "300 Feet",
+  "Mohammadpur",
+  "Dhanmondi",
+  "Khamarbari",
+  "BRAC",
+  "NSU",
+  "AUST",
+  "DRMC",
 ];
 
 async function seedLocations() {
   try {
     const existing = await db.select().from(locationsTable);
-    if (existing.length === 0) {
-      logger.info("Database locations empty. Auto-seeding 6 default hangout spots...");
+    const hasMohammadpur = existing.some(l => l.name === "Mohammadpur");
+    if (existing.length === 0 || !hasMohammadpur) {
+      logger.info("Database locations empty or old. Seeding default hangout spots...");
+      // Safely delete existing to avoid duplicate conflicts and clean up legacy data
+      await db.delete(locationsTable);
       await db.insert(locationsTable).values(
         DEFAULT_LOCATIONS.map((name) => ({ name }))
       );
       logger.info("Hangout locations seeded successfully!");
     } else {
-      logger.info(`Database already contains ${existing.length} locations. Skipping seed.`);
+      logger.info(`Database already contains correct locations.`);
     }
   } catch (err) {
     logger.error({ err }, "Failed to auto-seed locations database");

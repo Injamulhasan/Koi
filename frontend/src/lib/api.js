@@ -257,3 +257,20 @@ export function useMarkNotificationRead() {
     }),
   });
 }
+
+export function useLikeSubmission() {
+  return useMutation({
+    mutationFn: (variables) => fetchWithAuth(`/api/submissions/${variables.targetUserId}/like`, {
+      method: "POST",
+    }),
+  });
+}
+
+export function useDislikeSubmission() {
+  return useMutation({
+    mutationFn: (variables) => fetchWithAuth(`/api/submissions/${variables.targetUserId}/dislike`, {
+      method: "POST",
+    }),
+  });
+}
+

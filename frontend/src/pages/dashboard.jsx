@@ -9,6 +9,8 @@ import {
   useUpdateSchedule,
   useListContributions,
   useUpsertMyContribution,
+  useLikeSubmission,
+  useDislikeSubmission,
   getListVotesQueryKey,
   getGetMyVoteQueryKey,
   getListLocationsQueryKey,
@@ -67,6 +69,56 @@ function ActivePlanningHub() {
   const upsertContribution = useUpsertMyContribution();
   const [amountInput, setAmountInput] = useState("");
   const [isEditingContribution, setIsEditingContribution] = useState(false);
+
+  const [declaredLocationId, setDeclaredLocationId] = useState("");
+  const [declaredTimeSlot, setDeclaredTimeSlot] = useState("");
+  const [declaredChanda, setDeclaredChanda] = useState("");
+  const [isEditingDeclaration, setIsEditingDeclaration] = useState(false);
+
+  useEffect(() => {
+    if (myVote) {
+      setDeclaredLocationId(myVote.locationId?.toString() || "");
+      setDeclaredTimeSlot(myVote.timeSlot || "");
+      setDeclaredChanda(myVote.chanda?.toString() || "");
+    }
+  }, [myVote]);
+
+  const handleConfirmDeclaration = () => {
+    if (!declaredLocationId) {
+      toast.error("Please select a location spot");
+      return;
+    }
+    if (!declaredTimeSlot) {
+      toast.error("Please select a preferred time slot");
+      return;
+    }
+    const chandaNum = Number(declaredChanda);
+    if (isNaN(chandaNum) || chandaNum < 0) {
+      toast.error("Please enter a valid contribution amount");
+      return;
+    }
+
+    castVote.mutate({
+      data: {
+        locationId: Number(declaredLocationId),
+        timeSlot: declaredTimeSlot,
+        chanda: chandaNum,
+      }
+    }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListVotesQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetMyVoteQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListLocationsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListContributionsQueryKey() });
+        toast.success("Hangout declaration confirmed!");
+        setIsEditingDeclaration(false);
+      },
+      onError: (err) => {
+        toast.error(err.message || "Failed to confirm hangout declaration");
+      }
+    });
+  };
 
   // Sync state
   useEffect(() => {
@@ -222,77 +274,124 @@ function ActivePlanningHub() {
           </div>
         </div>
 
-        {/* Unified Quick Controls */}
-        <div className="p-4 bg-secondary/5 border border-border/60 rounded-xl space-y-4">
-          <h4 className="text-xs font-bold text-foreground uppercase tracking-wider">Quick Plan Update</h4>
-          
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 items-end">
-            {/* Choose Spot Input */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5 text-primary" /> Cast / Update Vote
-              </label>
-              <Select onValueChange={handleVoteSelect} value={myVote?.locationId?.toString() || ""}>
-                <SelectTrigger className="w-full bg-background border-border text-xs h-10">
-                  <SelectValue placeholder="Choose one of the 6 spots" />
-                </SelectTrigger>
-                <SelectContent className="bg-card border-card-border">
-                  {locations?.map((loc) => (
-                    <SelectItem key={loc.id} value={loc.id.toString()} className="text-xs">
-                      {loc.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            {/* Set Hangout Time Input */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                <Calendar className="w-3.5 h-3.5 text-accent" /> Set Date & Time
-              </label>
-              {isEditingSchedule ? (
-                <div className="flex gap-2 items-center">
-                  <Input type="date" value={dateStr} onChange={e => setDateStr(e.target.value)}
-                    className="w-1/2 h-10 bg-background border-border text-xs" />
-                  <Input type="time" value={timeStr} onChange={e => setTimeStr(e.target.value)}
-                    className="w-1/2 h-10 bg-background border-border text-xs" />
-                  <Button size="icon" className="h-10 w-10 shrink-0 bg-accent text-accent-foreground" onClick={handleSaveSchedule}>
-                    <Check className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : (
-                <Button variant="outline" className="w-full justify-between h-10 text-left font-normal bg-background text-xs border-border" onClick={() => setIsEditingSchedule(true)}>
-                  <span className="truncate">{scheduleDate ? format(scheduleDate, "EEE, MMM d, h:mm a") : "Schedule Hangout"}</span>
-                  <Edit3 className="w-3.5 h-3.5 text-muted-foreground ml-2" />
-                </Button>
-              )}
-            </div>
-
-            {/* Set Contribution Input */}
-            <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                <Coins className="w-3.5 h-3.5 text-secondary" /> Add Contribution
-              </label>
-              {isEditingContribution ? (
-                <div className="flex gap-2 items-center">
-                  <div className="relative flex-1">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">৳</span>
-                    <Input type="number" placeholder="0" value={amountInput} onChange={e => setAmountInput(e.target.value)}
-                      className="pl-6 h-10 bg-background border-border text-xs" />
-                  </div>
-                  <Button size="icon" className="h-10 w-10 shrink-0 bg-secondary text-secondary-foreground" onClick={handleSaveContribution}>
-                    <Check className="w-4 h-4" />
-                  </Button>
-                </div>
-              ) : (
-                <Button variant="outline" className="w-full justify-between h-10 text-left font-normal bg-background text-xs border-border" onClick={() => setIsEditingContribution(true)}>
-                  <span>{myContribution ? `My Contribution: ৳${myContribution.amount}` : "Declare Budget"}</span>
-                  <Edit3 className="w-3.5 h-3.5 text-muted-foreground ml-2" />
-                </Button>
-              )}
-            </div>
+        {/* My Hangout Declaration */}
+        <div className="p-5 bg-accent/5 border border-accent/20 rounded-xl space-y-4">
+          <div className="flex justify-between items-center">
+            <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-accent" /> My Hangout Declaration
+            </h4>
+            {!myVote || isEditingDeclaration ? null : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-8 px-3 text-xs font-black"
+                onClick={() => setIsEditingDeclaration(true)}
+              >
+                <Edit3 className="w-3.5 h-3.5 mr-1" /> Edit Selection
+              </Button>
+            )}
           </div>
+
+          {!myVote || isEditingDeclaration ? (
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                {/* Choose Spot Input */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                    <MapPin className="w-3.5 h-3.5 text-primary" /> 1. Choose Spot
+                  </label>
+                  <Select onValueChange={setDeclaredLocationId} value={declaredLocationId}>
+                    <SelectTrigger className="w-full bg-background border-border text-xs h-10">
+                      <SelectValue placeholder="Select one of the spots" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-card-border">
+                      {locations?.map((loc) => (
+                        <SelectItem key={loc.id} value={loc.id.toString()} className="text-xs">
+                          {loc.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Preferred Time Slot */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-accent" /> 2. Preferred Time Slot
+                  </label>
+                  <Select onValueChange={setDeclaredTimeSlot} value={declaredTimeSlot}>
+                    <SelectTrigger className="w-full bg-background border-border text-xs h-10">
+                      <SelectValue placeholder="Select time slot" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-card border-card-border">
+                      <SelectItem value="After 6:00 PM" className="text-xs">After 6:00 PM</SelectItem>
+                      <SelectItem value="After 8:00 PM" className="text-xs">After 8:00 PM</SelectItem>
+                      <SelectItem value="After 10:00 PM" className="text-xs">After 10:00 PM</SelectItem>
+                      <SelectItem value="Anytime" className="text-xs">Anytime</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Financial Chanda */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                    <Coins className="w-3.5 h-3.5 text-secondary" /> 3. Contribution (৳)
+                  </label>
+                  <div className="relative">
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs">৳</span>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={declaredChanda}
+                      onChange={(e) => setDeclaredChanda(e.target.value)}
+                      className="pl-6 h-10 bg-background border-border text-xs"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 justify-end pt-1">
+                {isEditingDeclaration && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-xs font-bold"
+                    onClick={() => setIsEditingDeclaration(false)}
+                  >
+                    Cancel
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  className="bg-accent text-accent-foreground text-xs font-black shadow-[2px_2px_0_black]"
+                  onClick={handleConfirmDeclaration}
+                  disabled={castVote.isPending}
+                >
+                  {castVote.isPending ? "Confirming..." : "Confirm Declaration"}
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-background/40 border border-border/40 p-4 rounded-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+              <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                <div>
+                  <span className="text-xs font-semibold text-muted-foreground block">Spot</span>
+                  <span className="font-black text-foreground">{myVote.locationName}</span>
+                </div>
+                <div>
+                  <span className="text-xs font-semibold text-muted-foreground block">Preferred Time</span>
+                  <span className="font-black text-foreground">{myVote.timeSlot || "Anytime"}</span>
+                </div>
+                <div>
+                  <span className="text-xs font-semibold text-muted-foreground block">Chanda Contribution</span>
+                  <span className="font-black text-secondary font-mono">৳ {myVote.chanda || 0}</span>
+                </div>
+              </div>
+              <div className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold px-3 py-1.5 rounded-full shrink-0 flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5" /> Declaration Confirmed
+              </div>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -616,6 +715,122 @@ function ContributionsSection() {
   );
 }
 
+// Standalone MyHangoutDeclaration removed. Unified version is now inline inside ActivePlanningHub.
+
+// ── Citizen Hangout Feed (Global Interaction Feed) ──────────────────────────────
+function CitizenHangoutFeed() {
+  const queryClient = useQueryClient();
+  const { user: currentUser } = useUser();
+  const { data: votes, isLoading } = useListVotes();
+  
+  const likeMutation = useLikeSubmission();
+  const dislikeMutation = useDislikeSubmission();
+
+  const handleLike = (targetUserId) => {
+    likeMutation.mutate({ targetUserId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListVotesQueryKey() });
+      },
+      onError: (err) => {
+        toast.error("Failed to like submission");
+      }
+    });
+  };
+
+  const handleDislike = (targetUserId) => {
+    dislikeMutation.mutate({ targetUserId }, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListVotesQueryKey() });
+      },
+      onError: (err) => {
+        toast.error("Failed to dislike submission");
+      }
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="space-y-3">
+        {[1, 2, 3].map(i => <Skeleton key={i} className="h-16 rounded-lg w-full" />)}
+      </div>
+    );
+  }
+
+  // Filter feed to other citizens
+  const currentDbUserId = votes?.find(v => v.userName === (currentUser?.fullName || currentUser?.firstName))?.userId;
+  const otherSubmissions = votes?.filter(v => v.userId !== currentDbUserId) || [];
+
+  return (
+    <Card className="bg-card/90 border-card-border shadow-[4px_4px_0_hsl(var(--primary))] rounded-lg">
+      <CardContent className="p-5 space-y-4">
+        {otherSubmissions.length === 0 ? (
+          <p className="text-xs text-muted-foreground text-center py-6 italic">No other citizen submissions yet.</p>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {otherSubmissions.map((sub) => (
+              <div
+                key={sub.id}
+                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-background/50 border border-border/40 rounded-lg p-3"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <Avatar className="w-8 h-8 border border-border shrink-0">
+                    <AvatarImage src={sub.userAvatarUrl || undefined} />
+                    <AvatarFallback className="text-[10px] bg-primary/20 text-primary font-black">
+                      {sub.userName?.[0]}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0">
+                    <div className="flex items-baseline gap-1.5">
+                      <span className="text-xs font-bold text-foreground truncate">{sub.userName}</span>
+                      <span className="text-[9px] text-muted-foreground font-mono">
+                        ৳ {sub.chanda}
+                      </span>
+                    </div>
+                    <div className="flex flex-wrap gap-x-2 gap-y-0.5 mt-0.5 text-[10px] text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-primary" /> {sub.locationName}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-accent" /> {sub.timeSlot || "Anytime"}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-end sm:self-center shrink-0">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "h-8 px-2.5 text-xs font-bold border border-border/60 hover:bg-emerald-500/10 hover:text-emerald-400",
+                      sub.likedByMe && "bg-emerald-500/15 text-emerald-400 border-emerald-500/30"
+                    )}
+                    onClick={() => handleLike(sub.userId)}
+                  >
+                    👍 <span className="ml-1 font-mono">{sub.likesCount || 0}</span>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className={cn(
+                      "h-8 px-2.5 text-xs font-bold border border-border/60 hover:bg-rose-500/10 hover:text-rose-400",
+                      sub.dislikedByMe && "bg-rose-500/15 text-rose-400 border-rose-500/30"
+                    )}
+                    onClick={() => handleDislike(sub.userId)}
+                  >
+                    👎 <span className="ml-1 font-mono">{sub.dislikesCount || 0}</span>
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 // ── Main dashboard ────────────────────────────────────────────────────────────
 export default function DashboardPage() {
   const { data: summary, isLoading } = useGetDashboardSummary();
@@ -639,26 +854,12 @@ export default function DashboardPage() {
           <ActivePlanningHub />
         </motion.div>
 
-        {/* Unified Hangout Planning Control Center */}
-        <motion.div variants={item} className="grid grid-cols-1 lg:grid-cols-3 gap-8 pt-4">
-          {/* Vote section (takes 2/3 width on desktop) */}
-          <div className="lg:col-span-2 space-y-4">
-            <SectionHeader icon={MapPin} title="Detailed Location Votes" color="text-primary" />
-            <VoteSection />
-          </div>
 
-          {/* Schedule & Budget (stacked on 1/3 width on desktop) */}
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <SectionHeader icon={Calendar} title="Schedule Info" color="text-accent" />
-              <ScheduleSection />
-            </div>
 
-            <div className="space-y-4">
-              <SectionHeader icon={Wallet} title="Budget Pool Details" color="text-secondary" />
-              <ContributionsSection />
-            </div>
-          </div>
+        {/* Citizen Hangout Feed */}
+        <motion.div variants={item} className="space-y-4 pt-4 border-t border-border/50">
+          <SectionHeader icon={Sparkles} title="Citizen Hangout Feed" color="text-primary" />
+          <CitizenHangoutFeed />
         </motion.div>
 
         {/* ── Bottom row: chat + loans ── */}

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, messagesTable, messageReactionsTable, usersTable, notificationsTable } from "../db/index.js";
-import { eq, desc, lt, sql, and } from "drizzle-orm";
+import { eq, desc, lt, sql, and, inArray } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { broadcast } from "../lib/wsServer.js";
 
@@ -31,7 +31,7 @@ async function getMessagesWithReactions(limit, before) {
   const reactions = await db
     .select()
     .from(messageReactionsTable)
-    .where(sql`${messageReactionsTable.messageId} = ANY(${msgIds}::int[])`);
+    .where(inArray(messageReactionsTable.messageId, msgIds));
 
   const reactionMap = new Map();
   for (const r of reactions) {
