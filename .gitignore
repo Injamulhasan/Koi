@@ -1,56 +1,65 @@
-# See https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files for more about ignoring files.
+# Dependency Directories
+node_modules/
+/jspm_packages/
+web_modules/
 
-# compiled output
-dist
-tmp
-out-tsc
+# Build & Compiled Outputs
+/dist/
+/dist-ssr/
+/build/
+/out/
+/out-tsc/
+/tmp/
 *.tsbuildinfo
-.expo
-.expo-shared
+.expo/
+.expo-shared/
+.next/
 
-# dependencies
-node_modules
+# Local Environment Variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.backup
+*.env
+*.env.local
 
-# IDEs and editors
-/.idea
+# Logs and Debug Info
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+*.log
+/coverage/
+/coverage-ts/
+
+# IDEs & Editor Configuration
+.vscode/
+/.idea/
+/*.suo
+/*.ntvs*
+/*.njsproj
+/*.sln
+/*.sw?
 .project
 .classpath
-.c9/
-*.launch
 .settings/
+*.launch
 *.sublime-workspace
-
-# IDE - VSCode
-.vscode/*
-!.vscode/settings.json
-!.vscode/tasks.json
-!.vscode/launch.json
-!.vscode/extensions.json
-
-# misc
-/.sass-cache
-/connect.lock
-/coverage
-/libpeerconnection.log
-npm-debug.log
-yarn-error.log
-testem.log
-/typings
-
-# System Files
-.DS_Store
-Thumbs.db
-
-.cursor/rules/nx-rules.mdc
-.github/instructions/nx.instructions.md
-
-# Replit
 .cache/
 .local/
 
-node_modules
-.next
+# OS/System Specific Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-.env
-.env.local
-coverage
+# Other Workspace Specifics
+.cursor/rules/nx-rules.mdc
+.github/instructions/nx.instructions.md
