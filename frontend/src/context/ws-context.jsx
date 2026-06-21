@@ -30,6 +30,7 @@ export function WsProvider({ children }) {
           break;
 
         case "vote:cast":
+        case "submission:reaction_updated":
           queryClient.invalidateQueries({ queryKey: getListVotesQueryKey() });
           queryClient.invalidateQueries({ queryKey: getGetMyVoteQueryKey() });
           queryClient.invalidateQueries({ queryKey: getListLocationsQueryKey() });

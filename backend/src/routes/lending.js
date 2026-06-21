@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, lendingRecordsTable, usersTable, notificationsTable } from "../db/index.js";
-import { eq, sql } from "drizzle-orm";
+import { eq, sql, inArray } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth.js";
 import { broadcast } from "../lib/wsServer.js";
 
@@ -25,7 +25,7 @@ async function getLendingWithUsers() {
 
   const userIds = [...new Set([...records.map(r => r.lenderId), ...records.map(r => r.borrowerId)])];
   const users = await db.select().from(usersTable).where(
-    sql`${usersTable.id} = ANY(${userIds}::int[])`
+    inArray(usersTable.id, userIds)
   );
   const userMap = new Map(users.map(u => [u.id, u]));
 

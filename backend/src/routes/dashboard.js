@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { db, locationsTable, votesTable, scheduleTable, messagesTable, messageReactionsTable, contributionsTable, lendingRecordsTable, notificationsTable, usersTable } from "../db/index.js";
-import { eq, desc, sql, and } from "drizzle-orm";
+import { eq, desc, sql, and, inArray } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth.js";
 
 const router = Router();
@@ -62,7 +62,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
     let reactions = [];
     if (msgIds.length > 0) {
       reactions = await db.select().from(messageReactionsTable).where(
-        sql`${messageReactionsTable.messageId} = ANY(${msgIds}::int[])`
+        inArray(messageReactionsTable.messageId, msgIds)
       );
     }
 
@@ -109,6 +109,7 @@ router.get("/dashboard/summary", requireAuth, async (req, res) => {
       unreadNotifications: unreadCount[0]?.count ?? 0,
     });
   } catch (err) {
+    console.error("Error in /api/dashboard/summary:", err);
     res.status(500).json({ error: "Failed to get dashboard summary" });
   }
 });
