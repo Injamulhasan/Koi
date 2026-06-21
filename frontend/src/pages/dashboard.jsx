@@ -208,18 +208,17 @@ function ActivePlanningHub() {
 
   return (
     <Card className="relative overflow-hidden border-2 border-primary/30 bg-gradient-to-br from-card via-card to-primary/5 shadow-[8px_8px_0_hsl(var(--primary)/0.2)] rounded-xl">
-      <div className="absolute top-0 right-0 p-3 flex items-center gap-1.5 z-10">
-        <span className="relative flex h-2.5 w-2.5">
-          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-        </span>
-        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Live Sync Active</span>
-      </div>
-
-      <CardHeader className="pb-3 border-b border-border/40">
+      <CardHeader className="pb-3 border-b border-border/40 flex flex-row items-center justify-between gap-4">
         <CardTitle className="text-lg flex items-center gap-2 text-foreground font-black">
           <Sparkles className="w-5 h-5 text-primary" /> ACTIVE HANGOUT PLAN
         </CardTitle>
+        <div className="flex items-center gap-1.5 shrink-0">
+          <span className="relative flex h-2.5 w-2.5">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+          </span>
+          <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest hidden sm:inline">Live Sync Active</span>
+        </div>
       </CardHeader>
 
       <CardContent className="p-6 space-y-6">
@@ -276,7 +275,7 @@ function ActivePlanningHub() {
 
         {/* My Hangout Declaration */}
         <div className="p-5 bg-accent/5 border border-accent/20 rounded-xl space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <h4 className="text-xs font-bold text-foreground uppercase tracking-wider flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-accent" /> My Hangout Declaration
             </h4>
@@ -284,7 +283,7 @@ function ActivePlanningHub() {
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 px-3 text-xs font-black"
+                className="h-8 px-3 text-xs font-black w-full sm:w-auto"
                 onClick={() => setIsEditingDeclaration(true)}
               >
                 <Edit3 className="w-3.5 h-3.5 mr-1" /> Edit Selection
@@ -849,17 +848,15 @@ export default function DashboardPage() {
 
       <motion.div variants={container} initial="hidden" animate="show" className="space-y-8">
         
-        {/* Active Planning Banner (Top of Dashboard) */}
-        <motion.div variants={item}>
-          <ActivePlanningHub />
-        </motion.div>
-
-
-
-        {/* Citizen Hangout Feed */}
-        <motion.div variants={item} className="space-y-4 pt-4 border-t border-border/50">
+        {/* Citizen Hangout Feed (1st Section) */}
+        <motion.div variants={item} className="space-y-4">
           <SectionHeader icon={Sparkles} title="Citizen Hangout Feed" color="text-primary" />
           <CitizenHangoutFeed />
+        </motion.div>
+
+        {/* Active Planning Banner */}
+        <motion.div variants={item} className="pt-4 border-t border-border/50">
+          <ActivePlanningHub />
         </motion.div>
 
         {/* ── Bottom row: chat + loans ── */}

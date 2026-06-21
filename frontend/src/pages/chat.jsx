@@ -86,7 +86,7 @@ export default function ChatPage() {
   const displayMessages = messages ? [...messages].reverse() : [];
 
   return (
-    <div className="flex flex-col h-[calc(100dvh-8rem)] md:h-[100dvh] max-w-4xl mx-auto w-full relative">
+    <div className="flex flex-col h-[calc(100vh-8rem)] h-[calc(100dvh-8rem)] md:h-screen md:h-[100dvh] max-w-4xl mx-auto w-full relative">
       <div className="flex-none p-4 md:p-6 border-b border-border bg-background/90 backdrop-blur-sm z-10">
         <p className="text-xs font-black uppercase tracking-[0.24em] text-accent mb-1">Townhall, but useful</p>
         <h1 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
@@ -176,43 +176,43 @@ export default function ChatPage() {
         })}
       </div>
 
-      <div className="flex-none p-4 bg-background/80 backdrop-blur-md border-t border-border z-10">
+      <div className="flex-none p-2 md:p-4 bg-background/80 backdrop-blur-md border-t border-border z-10">
         {showImageInput && (
-          <div className="mb-3 flex gap-2">
+          <div className="mb-2 md:mb-3 flex gap-1.5 md:gap-2">
             <Input 
               placeholder="Paste image URL..." 
               value={imageUrl}
               onChange={e => setImageUrl(e.target.value)}
-              className="bg-card border-card-border rounded-md"
+              className="h-10 md:h-12 bg-card border-card-border rounded-md text-base md:text-sm"
             />
-            <Button variant="ghost" size="icon" onClick={() => setShowImageInput(false)}>
+            <Button variant="ghost" size="icon" className="h-10 w-10 md:h-12 md:w-12" onClick={() => setShowImageInput(false)}>
               <X className="w-4 h-4" />
             </Button>
           </div>
         )}
-        <form onSubmit={handleSend} className="flex gap-2 items-end">
+        <form onSubmit={handleSend} className="flex gap-1.5 md:gap-2 items-center">
           <Button 
             type="button" 
             variant="ghost" 
             size="icon" 
-            className="shrink-0 h-12 w-12 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10"
+            className="shrink-0 h-10 w-10 md:h-12 md:w-12 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/10"
             onClick={() => setShowImageInput(!showImageInput)}
           >
-            <ImageIcon className="w-5 h-5" />
+            <ImageIcon className="w-4 h-4 md:w-5 md:h-5" />
           </Button>
           <Input 
             placeholder="Drop a message..." 
             value={text}
             onChange={e => setText(e.target.value)}
-            className="h-12 rounded-md bg-card border-card-border px-6 text-[15px] shadow-sm focus-visible:ring-primary/50"
+            className="h-10 md:h-12 rounded-md bg-card border-card-border px-3 md:px-6 text-base md:text-[15px] shadow-sm focus-visible:ring-primary/50"
             autoFocus
           />
           <Button 
             type="submit" 
             disabled={(!text.trim() && !imageUrl.trim()) || sendMessage.isPending}
-            className="shrink-0 h-12 w-12 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 shadow-[3px_3px_0_hsl(var(--accent))]"
+            className="shrink-0 h-10 w-10 md:h-12 md:w-12 rounded-md bg-primary text-primary-foreground hover:bg-primary/90 shadow-[3px_3px_0_hsl(var(--accent))]"
           >
-            {sendMessage.isPending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 ml-0.5" />}
+            {sendMessage.isPending ? <Loader2 className="w-4 h-4 md:w-5 md:h-5 animate-spin" /> : <Send className="w-4 h-4 md:w-5 md:h-5 ml-0.5" />}
           </Button>
         </form>
       </div>
