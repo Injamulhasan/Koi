@@ -781,6 +781,12 @@ pnpm dev
 
 ## Backend (Render)
 
+### Environment Prerequisites
+- Ensure the environment variable `DATABASE_URL` is set to your Supabase PostgreSQL connection string.
+- **IMPORTANT**: Verify that there are no typos or spaces in the connection string (e.g. `aws-1-ap-southeast-1.pooler.supabase.com` must not contain spaces).
+- The backend parses `DATABASE_URL` using a robust native URL parser, decodes URL-encoded parameters (such as `%23` for `#`), and programmatically configures the connection pool with `ssl: { rejectUnauthorized: false }`. This ensures SSL connections succeed on Supabase transaction poolers even under custom host setups.
+- Database query operations for batch reaction and user records leverage Drizzle's `inArray` operator to prevent `malformed array literal` errors on the PostgreSQL server.
+
 Build:
 
 ```bash
@@ -790,7 +796,7 @@ pnpm install
 Start:
 
 ```bash
-pnpm --filter backend start
+pnpm --filter podcast-planner-backend start
 ```
 
 ---
