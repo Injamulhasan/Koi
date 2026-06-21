@@ -86,7 +86,7 @@ export default function ChatPage() {
   const displayMessages = messages ? [...messages].reverse() : [];
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] md:h-screen max-w-4xl mx-auto w-full relative">
+    <div className="flex flex-col h-[calc(100dvh-8rem)] md:h-[100dvh] max-w-4xl mx-auto w-full relative">
       <div className="flex-none p-4 md:p-6 border-b border-border bg-background/90 backdrop-blur-sm z-10">
         <p className="text-xs font-black uppercase tracking-[0.24em] text-accent mb-1">Townhall, but useful</p>
         <h1 className="text-2xl font-black tracking-tight text-foreground flex items-center gap-2">
@@ -103,7 +103,7 @@ export default function ChatPage() {
           const isMyMessage = msg.userName === (currentUser?.fullName || currentUser?.firstName);
 
           return (
-            <div key={msg.id} className={cn("flex gap-3 max-w-[85%]", isMyMessage ? "ml-auto flex-row-reverse" : "")}>
+            <div key={msg.id} className={cn("flex gap-3 max-w-[78%] md:max-w-[85%]", isMyMessage ? "ml-auto flex-row-reverse" : "")}>
               <Avatar className="w-8 h-8 md:w-10 md:h-10 border border-border shrink-0 mt-auto shadow-sm">
                 <AvatarImage src={msg.userAvatarUrl || undefined} />
                 <AvatarFallback className="bg-primary/20 text-primary text-xs">{msg.userName?.[0] || 'U'}</AvatarFallback>
@@ -144,10 +144,11 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  {/* Reaction Button Hover */}
+                  {/* Reaction Button Hover/Touch */}
                   <div className={cn(
-                    "absolute top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity",
-                    isMyMessage ? "-left-12" : "-right-12"
+                    "absolute top-1/2 -translate-y-1/2 transition-opacity",
+                    isMyMessage ? "-left-10 md:-left-12" : "-right-10 md:-right-12",
+                    "opacity-100 md:opacity-0 group-hover:opacity-100"
                   )}>
                     <Popover>
                       <PopoverTrigger asChild>

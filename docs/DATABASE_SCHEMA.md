@@ -38,6 +38,7 @@ export const votesTable = pgTable("votes", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
   locationId: integer("location_id").notNull().references(() => locationsTable.id, { onDelete: "cascade" }),
+  timeSlot: text("time_slot"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 }, (t) => [
   unique("one_vote_per_user").on(t.userId),
@@ -127,6 +128,21 @@ export const notificationsTable = pgTable("notifications", {
 });
 ```
 
+### J. Submission Likes Table (`submission_likes`)
+Tracks likes and dislikes for citizen hangout declarations in the global feed.
+
+```javascript
+export const submissionLikesTable = pgTable("submission_likes", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  targetUserId: integer("target_user_id").notNull().references(() => usersTable.id, { onDelete: "cascade" }),
+  type: text("type").notNull(), // 'like' or 'dislike'
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+}, (t) => [
+  unique("one_like_dislike_per_user_pair").on(t.userId, t.targetUserId),
+]);
+```
+
 ---
 
 ## 2. Integrity & Cascade Policies
@@ -140,5 +156,6 @@ All foreign keys in this database enforce strict **relational cascading policies
     *   `contributions` -> `onDelete: "cascade"`
     *   `lending_records` (both as lender or borrower) -> `onDelete: "cascade"`
     *   `notifications` -> `onDelete: "cascade"`
+    *   `submission_likes` (both as liker or target) -> `onDelete: "cascade"`
 2.  **Location Cascade**: If a location option is removed from the `locations` table, any user votes pointing to that location are automatically removed (`votes.locationId` -> `onDelete: "cascade"`).
 3.  **Schedule Nullify**: If a user who last updated the schedule is deleted, the schedule entry is kept, and the `updated_by` column is set to `null` (`schedule.updatedBy` -> `onDelete: "set null"`).

@@ -890,8 +890,8 @@ export default function DashboardPage() {
                         <AvatarFallback className="text-[9px] bg-primary/20 text-primary">{msg.userName?.[0]}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <div className="flex justify-between items-baseline">
-                          <span className="text-xs font-semibold text-foreground/80 truncate pr-2">{msg.userName} </span>
+                        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-baseline gap-0.5 sm:gap-2">
+                          <span className="text-xs font-semibold text-foreground/80 truncate">{msg.userName}</span>
                           <span className="text-[10px] text-muted-foreground shrink-0">{formatDistanceToNow(new Date(msg.createdAt))} ago</span>
                         </div>
                         {msg.messageText && <p className="text-sm leading-snug text-foreground/90 mt-0.5 truncate">{msg.messageText}</p>}
