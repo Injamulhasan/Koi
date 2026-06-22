@@ -1,11 +1,11 @@
 import { Link, useLocation } from "wouter";
 import { useClerk, useUser } from "@/lib/auth.jsx";
-import { 
-  Home, 
-  MessageSquare, 
-  HandCoins, 
-  UserCircle, 
-  Bell, 
+import {
+  Home,
+  MessageSquare,
+  HandCoins,
+  UserCircle,
+  Bell,
   LogOut,
   Menu,
   X
@@ -45,7 +45,7 @@ export default function Layout({ children }) {
           <div className="flex items-center gap-3">
             <img src="/logo.svg" alt="Logo" className="w-9 h-9" />
             <div>
-              <p className="text-[10px] font-black uppercase tracking-[0.28em] text-primary">Digital Tong</p>
+              <p className="text-[10px] font-black uppercase tracking-wide text-primary">Everything here is a joke.</p>
               <h1 className="text-xl font-black tracking-tight text-sidebar-foreground">KOI</h1>
             </div>
           </div>
@@ -59,8 +59,8 @@ export default function Layout({ children }) {
               <Link key={item.href} href={item.href}>
                 <div className={cn(
                   "flex items-center gap-3 px-3 py-2.5 rounded-md transition-colors cursor-pointer group relative border",
-                  isActive 
-                    ? "bg-primary text-primary-foreground border-primary font-black shadow-[4px_4px_0_hsl(var(--accent))]" 
+                  isActive
+                    ? "bg-primary text-primary-foreground border-primary font-black shadow-[4px_4px_0_hsl(var(--accent))]"
                     : "text-sidebar-foreground/70 border-transparent hover:bg-sidebar-accent hover:text-sidebar-foreground hover:border-sidebar-border"
                 )}>
                   <Icon className={cn("w-5 h-5", isActive ? "text-primary-foreground" : "text-sidebar-foreground/60 group-hover:text-primary")} />
@@ -91,8 +91,8 @@ export default function Layout({ children }) {
               <p className="text-xs text-sidebar-foreground/45 truncate">builder, not a resource</p>
             </div>
           </div>
-          <Button 
-            variant="ghost" 
+          <Button
+            variant="ghost"
             className="w-full justify-start text-muted-foreground hover:text-foreground hover:bg-destructive/10 hover:text-destructive group"
             onClick={handleSignOut}
           >
@@ -108,7 +108,7 @@ export default function Layout({ children }) {
           <img src="/logo.svg" alt="Logo" className="w-7 h-7" />
           <h1 className="font-black tracking-tight text-sidebar-foreground">KOI</h1>
         </div>
-        
+
         <div className="flex items-center gap-3">
           <Link href="/notifications">
             <div className="relative p-2">
@@ -133,11 +133,11 @@ export default function Layout({ children }) {
               const isActive = location === item.href;
               return (
                 <Link key={item.href} href={item.href}>
-                  <div 
+                  <div
                     className={cn(
                       "flex items-center gap-3 px-4 py-3 rounded-md transition-colors cursor-pointer border",
-                      isActive 
-                        ? "bg-primary text-primary-foreground border-primary font-black" 
+                      isActive
+                        ? "bg-primary text-primary-foreground border-primary font-black"
                         : "text-sidebar-foreground/70 border-transparent hover:bg-sidebar-accent hover:text-sidebar-foreground"
                     )}
                     onClick={() => setMobileMenuOpen(false)}
@@ -169,9 +169,20 @@ export default function Layout({ children }) {
 
       {/* Main Content */}
       <main className="flex-1 md:ml-72 pt-16 md:pt-0 min-h-screen flex flex-col relative overflow-hidden">
-        {children}
+        <div className="flex-1">
+          {children}
+        </div>
+        <footer className="py-8 border-t border-border/40 text-center text-xs text-muted-foreground space-y-1.5 max-w-5xl mx-auto w-full">
+          <p className="font-semibold text-foreground/80">© 2026 KOI.bd. All wrongs reserved.</p>
+          <p className="max-w-xl mx-auto text-[11px] leading-relaxed text-muted-foreground/60 px-4">
+            This site is a work of fiction and satire for entertainment purposes only. Any resemblance to actual persons, living or dead, or actual software companies, is purely coincidental (and hilarious). Please don't sue us; we are broke.
+          </p>
+          <p className="text-[11px] pt-1 text-muted-foreground/50">
+            Made with <span className="text-destructive font-emoji">❤️</span> in Bangladesh
+          </p>
+        </footer>
       </main>
-      
+
       {/* Bottom Nav (Mobile Only) */}
       <div className="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-sidebar/95 backdrop-blur-lg border-t border-sidebar-border z-30 flex items-center justify-around px-2">
         {navItems.map((item) => {
