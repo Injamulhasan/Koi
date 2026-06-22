@@ -722,7 +722,7 @@ function CitizenHangoutFeed() {
   const queryClient = useQueryClient();
   const { user: currentUser } = useUser();
   const { data: votes, isLoading } = useListVotes();
-  
+
   const likeMutation = useLikeSubmission();
   const dislikeMutation = useDislikeSubmission();
 
@@ -842,13 +842,13 @@ export default function DashboardPage() {
     <div className="p-4 md:p-8 max-w-5xl mx-auto w-full pb-28 md:pb-10">
       {/* Header */}
       <div className="mb-8 border-b border-border pb-6">
-        <p className="text-xs font-black uppercase tracking-[0.28em] text-primary mb-2">Kamla-mode control room</p>
+        <p className="text-xs font-black uppercase tracking-wide text-primary mb-2">Users are solely responsible for their generated content.</p>
         <h1 className="text-3xl md:text-5xl font-black tracking-tight">KOI</h1>
-        <p className="text-muted-foreground mt-2">Everything the crew needs, without a 79-message meeting.</p>
+        <p className="text-muted-foreground mt-2">Diagnose exactly how toxic, broke, or flakey your friend circle is.</p>
       </div>
 
       <motion.div variants={container} initial="hidden" animate="show" className="space-y-8">
-        
+
         {/* Active Planning Banner (Top of Dashboard) */}
         <motion.div variants={item}>
           <ActivePlanningHub />
