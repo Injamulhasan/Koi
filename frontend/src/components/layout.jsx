@@ -126,7 +126,7 @@ export default function Layout({ children }) {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 top-16 bg-sidebar z-20 flex flex-col">
+        <div className="md:hidden fixed inset-x-0 top-16 bottom-0 bg-sidebar z-40 flex flex-col">
           <nav className="flex-1 p-4 space-y-2 overflow-y-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -154,9 +154,9 @@ export default function Layout({ children }) {
               );
             })}
           </nav>
-          <div className="p-6 border-t border-border mt-auto">
-            <Button
-              variant="destructive"
+          <div className="p-6 pb-8 border-t border-border mt-auto">
+            <Button 
+              variant="destructive" 
               className="w-full justify-start h-12 text-base"
               onClick={handleSignOut}
             >
